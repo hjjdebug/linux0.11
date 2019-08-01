@@ -148,7 +148,8 @@ void main(void)		/* This really IS void, no error here. */
  * can run). For task0 'pause()' just means we go check if some other
  * task can run, and if not we return here.
  */
-	for(;;) pause();
+	for(;;) 
+		pause();
 }
 
 static int printf(const char *fmt, ...)
@@ -157,7 +158,8 @@ static int printf(const char *fmt, ...)
 	int i;
 
 	va_start(args, fmt);
-	write(1,printbuf,i=vsprintf(printbuf, fmt, args));
+	i=vsprintf(printbuf, fmt, args);
+	write(1,printbuf,i);
 	va_end(args);
 	return i;
 }

@@ -3,7 +3,7 @@ romimage: file=/usr/share/bochs/BIOS-bochs-latest
 megs: 16
 vgaromimage: file=/usr/share/vgabios/vgabios.bin
 floppya: 1_44="Image", status=inserted
-ata0-master: type=disk, path="fs/hdc-0.11-new.img", mode=flat, cylinders=410, heads=16, spt=38
+ata0-master: type=disk, path="./hdc-0.11-new.img", mode=flat, cylinders=410, heads=16, spt=38
 boot: a
 log: bochsout.txt
 vga_update_interval: 300000

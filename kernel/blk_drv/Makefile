@@ -12,29 +12,29 @@ CFLAGS	+= -I../../include
 CPP	+= -I../../include
 
 .c.s:
-	@$(CC) $(CFLAGS) \
+	$(CC) $(CFLAGS) \
 	-S -o $*.s $<
 .s.o:
-	@$(AS) -o $*.o $<
+	$(AS) -o $*.o $<
 .c.o:
-	@$(CC) $(CFLAGS) \
+	$(CC) $(CFLAGS) \
 	-c -o $*.o $<
 
 OBJS  = ll_rw_blk.o floppy.o hd.o ramdisk.o
 
 blk_drv.a: $(OBJS)
-	@$(AR) rcs blk_drv.a $(OBJS)
-	@sync
+	$(AR) rcs blk_drv.a $(OBJS)
+	sync
 
 clean:
-	@rm -f core *.o *.a tmp_make
-	@for i in *.c;do rm -f `basename $$i .c`.s;done
+	rm -f core *.o *.a tmp_make
+	for i in *.c;do rm -f `basename $$i .c`.s;done
 
 dep:
-	@sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
-	@(for i in *.c;do echo -n `echo $$i | sed 's,\.c,\.s,'`" "; \
+	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
+	(for i in *.c;do echo -n `echo $$i | sed 's,\.c,\.s,'`" "; \
 		$(CPP) -M $$i;done) >> tmp_make
-	@cp tmp_make Makefile
+	cp tmp_make Makefile
 
 ### Dependencies:
 floppy.s floppy.o: floppy.c ../../include/linux/sched.h ../../include/linux/head.h \

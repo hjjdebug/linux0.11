@@ -1,23 +1,20 @@
-# voidccc 
-# http://blog.csdn.net/voidccc
-# <voidccc@gmail.com>
-# 2013-03-11
+# hjjdebug
+# https://blog.csdn.net/hejinjing_tom_com
+# <15373661380@qq.com>
+#  2019年 08月 05日 星期一 11:51:27 CST
+enviroment: Ubuntu14.04, gcc4.8.4(默认), bochs2.4.6(自编译带gdb 调试功能), qemu(默认)
+run linux-0.11 
+$ make run
+或者
+$ make bochs-run
 
-Steps to run linux-0.11 on Ubuntu:
-    1 build the code
-    $ make
+debug linux-0.11 
+$ make debug 
+或者
+$ make bochs-debug
 
-    2 unzip hdc-0.11-new.img in tools/bochs/ folder, this file is the root file system(MINIX).
-    $ tar zxvf tools/bochs/hdc-0.11-new.tar.gz -C ./tools/bochs/
+另一窗口:
+$ gdb
+$ source init1
 
-    3 run bochs(2.4.6)
-    $ bochs -f ./tools/bochs/bochsrc/bochsrc-hd.bxrc 
-
-Notes: 
-    1 Based on the tigercn version(Reference: http://www.oldlinux.org/oldlinux/viewthread.php?tid=13681) I rename the original "README" file to "README.old". Thanks to tigercn !
-    2 Tested on Ubuntu 12.04.1(Bochs 2.4.6)
-
-Change Log:
-    1 Add the MINIX root file hdc-0.11-new.img
-    1 Add "display_library:sdl" at the beginning of bochsrc-hd.bxrc file
-    2 Modify the path of "ata0-master" attribute in bochsrc-hd.bxrc file
+enjoy it!

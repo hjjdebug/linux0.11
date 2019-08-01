@@ -163,7 +163,7 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 	for( ; size-->0 ; from_dir++,to_dir++) {
 		if (1 & *to_dir)
 			panic("copy_page_tables: already exist");
-		if (!(1 & *from_dir))
+		if (!(1 & *from_dir))		// P 位
 			continue;
 		from_page_table = (unsigned long *) (0xfffff000 & *from_dir);
 		if (!(to_page_table = (unsigned long *) get_free_page()))
@@ -174,7 +174,7 @@ int copy_page_tables(unsigned long from,unsigned long to,long size)
 			this_page = *from_page_table;
 			if (!(1 & this_page))
 				continue;
-			this_page &= ~2;
+			this_page &= ~2;		// R/W 位
 			*to_page_table = this_page;
 			if (this_page > LOW_MEM) {
 				*from_page_table = this_page;

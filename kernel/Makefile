@@ -29,12 +29,12 @@ CFLAGS	+= -I../include
 CPP	+= -I../include
 
 .c.s:
-	@$(CC) $(CFLAGS) \
+	$(CC) $(CFLAGS) \
 	-S -o $*.s $<
 .s.o:
-	@$(AS) -o $*.o $<
+	$(AS) -o $*.o $<
 .c.o:
-	@$(CC) $(CFLAGS) \
+	$(CC) $(CFLAGS) \
 	-c -o $*.o $<
 
 OBJS  = sched.o system_call.o traps.o asm.o fork.o \
@@ -42,20 +42,20 @@ OBJS  = sched.o system_call.o traps.o asm.o fork.o \
 	signal.o mktime.o
 
 kernel.o: $(OBJS)
-	@$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
-	@sync
+	$(LD) $(LDFLAGS) -o kernel.o $(OBJS)
+	sync
 
 clean:
-	@rm -f core *.o *.a tmp_make keyboard.s
-	@for i in *.c;do rm -f `basename $$i .c`.s;done
-	@for i in chr_drv blk_drv math; do make clean -C $$i; done
+	rm -f core *.o *.a tmp_make keyboard.s
+	for i in *.c;do rm -f `basename $$i .c`.s;done
+	for i in chr_drv blk_drv math; do make clean -C $$i; done
 
 dep:
-	@sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
-	@(for i in *.c;do echo -n `echo $$i | sed 's,\.c,\.s,'`" "; \
+	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
+	(for i in *.c;do echo -n `echo $$i | sed 's,\.c,\.s,'`" "; \
 		$(CPP) -M $$i;done) >> tmp_make
-	@cp tmp_make Makefile
-	@for i in chr_drv blk_drv; do make dep -C $$i; done
+	cp tmp_make Makefile
+	for i in chr_drv blk_drv; do make dep -C $$i; done
 
 ### Dependencies:
 exit.s exit.o: exit.c ../include/errno.h ../include/signal.h \

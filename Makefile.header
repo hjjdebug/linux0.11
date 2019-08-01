@@ -3,12 +3,12 @@
 # author: falcon <wuzhangjin@gmail.com>
 # update: 2008-10-29
 
-AS	= as --32
+AS	= as --32 -g
 LD	= ld
 #LDFLAGS = -m elf_i386 -x 
 LDFLAGS = -m elf_i386
 CC	= gcc
-CFLAGS  = -g -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer -fstrength-reduce #-Wall
+CFLAGS  = -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer -fstrength-reduce #-Wall
 
 CPP	= cpp -nostdinc
 AR	= ar

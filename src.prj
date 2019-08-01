@@ -1,0 +1,126 @@
+linux0.11=/home/hjj/gitSource/linux0.11 CD=. filter="*.c *.h *.S *.s" {
+ boot=boot {
+  bootsect.s
+  head.s
+  setup.s
+ }
+ fs=fs {
+  bitmap.c
+  block_dev.c
+  buffer.c
+  char_dev.c
+  exec.c
+  fcntl.c
+  file_dev.c
+  file_table.c
+  inode.c
+  ioctl.c
+  namei.c
+  open.c
+  pipe.c
+  read_write.c
+  stat.c
+  super.c
+  truncate.c
+ }
+ include=include {
+  a.out.h
+  const.h
+  ctype.h
+  errno.h
+  fcntl.h
+  signal.h
+  stdarg.h
+  stddef.h
+  string.h
+  termios.h
+  time.h
+  unistd.h
+  utime.h
+  asm=asm {
+   io.h
+   memory.h
+   segment.h
+   system.h
+  }
+  linux=linux {
+   config.h
+   fdreg.h
+   fs.h
+   hdreg.h
+   head.h
+   kernel.h
+   mm.h
+   sched.h
+   sys.h
+   tty.h
+  }
+  sys=sys {
+   stat.h
+   times.h
+   types.h
+   utsname.h
+   wait.h
+  }
+ }
+ init=init {
+  main.c
+ }
+ kernel=kernel {
+  exit.c
+  fork.c
+  mktime.c
+  panic.c
+  printk.c
+  sched.c
+  signal.c
+  sys.c
+  traps.c
+  vsprintf.c
+  asm.s
+  system_call.s
+  blk_drv=blk_drv {
+   floppy.c
+   hd.c
+   ll_rw_blk.c
+   ramdisk.c
+   blk.h
+  }
+  chr_drv=chr_drv {
+   console.c
+   serial.c
+   tty_io.c
+   tty_ioctl.c
+   keyboard.S
+   keyboard.s
+   rs_io.s
+  }
+  math=math {
+   math_emulate.c
+  }
+ }
+ lib=lib {
+  _exit.c
+  close.c
+  ctype.c
+  dup.c
+  errno.c
+  execve.c
+  malloc.c
+  open.c
+  setsid.c
+  string.c
+  wait.c
+  write.c
+ }
+ mm=mm {
+  memory.c
+  page.s
+ }
+ tools=tools {
+  bochs=bochs {
+   bochsrc=bochsrc {
+   }
+  }
+ }
+}

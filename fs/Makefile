@@ -5,10 +5,10 @@ CFLAGS	+= -I../include
 CPP	+= -I../include
 
 .c.s:
-	@$(CC) $(CFLAGS) \
+	$(CC) $(CFLAGS) \
 	-S -o $*.s $<
 .c.o:
-	@$(CC) $(CFLAGS) \
+	$(CC) $(CFLAGS) \
 	-c -o $*.o $<
 .s.o:
 	$(AS) -o $*.o $<
@@ -18,16 +18,16 @@ OBJS=	open.o read_write.o inode.o file_table.o buffer.o super.o \
 	bitmap.o fcntl.o ioctl.o truncate.o
 
 fs.o: $(OBJS)
-	@$(LD) $(LDFLAGS) -o fs.o $(OBJS)
+	$(LD) $(LDFLAGS) -o fs.o $(OBJS)
 
 clean:
-	@rm -f core *.o *.a tmp_make
-	@for i in *.c;do rm -f `basename $$i .c`.s;done
+	rm -f core *.o *.a tmp_make
+	for i in *.c;do rm -f `basename $$i .c`.s;done
 
 dep:
-	@sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
-	@(for i in *.c;do $(CPP) -M $$i;done) >> tmp_make
-	@cp tmp_make Makefile
+	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
+	(for i in *.c;do $(CPP) -M $$i;done) >> tmp_make
+	cp tmp_make Makefile
 
 ### Dependencies:
 bitmap.o: bitmap.c ../include/string.h ../include/linux/sched.h \
