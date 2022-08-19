@@ -5,7 +5,6 @@ System.map
 bochsout.txt
 boot/bootsect
 boot/setup
-hdc-0.11-new.img
 kernel/chr_drv/keyboard.s
 tools/calltree-2.3.tar.gz.orig
 tools/calltree-2.3/
