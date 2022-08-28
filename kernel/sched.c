@@ -185,7 +185,7 @@ repeat:	current->state = TASK_INTERRUPTIBLE;
 		tmp->state=0;
 }
 
-void wake_up(struct task_struct **p)
+void wake_up_last(struct task_struct **p)
 {
 	if (p && *p) {
 		(**p).state=0;
@@ -252,7 +252,7 @@ void do_floppy_timer(void)
 			continue;
 		if (mon_timer[i]) {
 			if (!--mon_timer[i])
-				wake_up(i+wait_motor);
+				wake_up_last(i+wait_motor);
 		} else if (!moff_timer[i]) {
 			current_DOR &= ~mask;
 			outb(current_DOR,FD_DOR);

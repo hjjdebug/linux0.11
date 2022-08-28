@@ -146,7 +146,7 @@ extern long startup_time;
 extern void add_timer(long jiffies, void (*fn)(void));
 extern void sleep_on(struct task_struct ** p);
 extern void interruptible_sleep_on(struct task_struct ** p);
-extern void wake_up(struct task_struct ** p);
+extern void wake_up_last(struct task_struct ** p);
 
 /*
  * Entry into gdt where to find first TSS. 0-nul, 1-cs, 2-ds, 3-syscall
@@ -154,10 +154,13 @@ extern void wake_up(struct task_struct ** p);
  */
 #define FIRST_TSS_ENTRY 4
 #define FIRST_LDT_ENTRY (FIRST_TSS_ENTRY+1)
+//获取第n个任务的gdt表偏移值,第n个ldt的gdt表偏移值
 #define _TSS(n) ((((unsigned long) n)<<4)+(FIRST_TSS_ENTRY<<3))
 #define _LDT(n) ((((unsigned long) n)<<4)+(FIRST_LDT_ENTRY<<3))
 #define ltr(n) __asm__("ltr %%ax"::"a" (_TSS(n)))
 #define lldt(n) __asm__("lldt %%ax"::"a" (_LDT(n)))
+//str %%ax 保存tss 段选择子到ax寄存器,减FIRST_TSS_ENTRY地址求出任务号送给ax->n
+//该函数返回当前任务号
 #define str(n) \
 __asm__("str %%ax\n\t" \
 	"subl %2,%%eax\n\t" \
@@ -232,6 +235,7 @@ __asm__("movb %3,%%dh\n\t" \
 __base;})
 **/
 
+//addr 指向一个段描述符，从中取出基址
 static inline unsigned long _get_base(char * addr)
 {
          unsigned long __base;
@@ -248,6 +252,8 @@ static inline unsigned long _get_base(char * addr)
 
 #define get_base(ldt) _get_base( ((char *)&(ldt)) )
 
+// lsll 是 load segment limit 指令，
+// segment是描述符，该指令从描述符中提取段限长返回
 #define get_limit(segment) ({ \
 unsigned long __limit; \
 __asm__("lsll %1,%0\n\tincl %0":"=r" (__limit):"r" (segment)); \

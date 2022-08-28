@@ -176,26 +176,26 @@ ok1_read:
 ok2_read:
 	call 	read_track
 	mov 	%ax, %cx
-	add 	sread, %ax
+	add 	sread, %ax	 #累加扇区数
 	#seg cs
 	cmp 	%cs:sectors+0, %ax
 	jne 	ok3_read
 	mov 	$1, %ax
-	sub 	head, %ax
-	jne 	ok4_read
-	incw    track 
+	sub 	head, %ax		#磁头数减1
+	jne 	ok4_read		#不为0跳转
+	incw    track 			#磁道数加1
 ok4_read:
-	mov	%ax, head
+	mov	%ax, head			#更新磁头
 	xor	%ax, %ax
 ok3_read:
-	mov	%ax, sread
+	mov	%ax, sread			#更新扇区
 	shl	$9, %cx
-	add	%cx, %bx
+	add	%cx, %bx			#bx 加上字节数
 	jnc	rp_read
 	mov	%es, %ax
-	add	$0x1000, %ax
+	add	$0x1000, %ax		#目的地址段加1000
 	mov	%ax, %es
-	xor	%bx, %bx
+	xor	%bx, %bx			#偏移地址清0
 	jmp	rp_read
 
 read_track:
@@ -204,14 +204,14 @@ read_track:
 	push	%cx
 	push	%dx
 	mov	track, %dx
-	mov	sread, %cx
+	mov	sread, %cx		# sectors
 	inc	%cx
-	mov	%dl, %ch
-	mov	head, %dx
+	mov	%dl, %ch		# sector high
+	mov	head, %dx		#head
 	mov	%dl, %dh
 	mov	$0, %dl
 	and	$0x0100, %dx
-	mov	$2, %ah
+	mov	$2, %ah		# service 2
 	int	$0x13
 	jc	bad_rt
 	pop	%dx
@@ -219,7 +219,7 @@ read_track:
 	pop	%bx
 	pop	%ax
 	ret
-bad_rt:	mov	$0, %ax
+bad_rt:	mov	$0, %ax			#复位磁盘
 	mov	$0, %dx
 	int	$0x13
 	pop	%dx

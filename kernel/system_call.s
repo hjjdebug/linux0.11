@@ -14,7 +14,7 @@
  * don't handle signal-recognition, as that would clutter them up totally
  * unnecessarily.
  *
- * Stack layout in 'ret_from_system_call':
+ * Stack layout in 'ret_from_sys_call':
  *
  *	 0(%esp) - %eax
  *	 4(%esp) - %ebx

@@ -127,7 +127,7 @@ void floppy_deselect(unsigned int nr)
 	if (nr != (current_DOR & 3))
 		printk("floppy_deselect: drive not selected\n\r");
 	selected = 0;
-	wake_up(&wait_on_floppy_select);
+	wake_up_last(&wait_on_floppy_select);
 }
 
 /*

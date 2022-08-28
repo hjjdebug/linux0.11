@@ -36,7 +36,7 @@ static struct buffer_head * free_list;
 static struct task_struct * buffer_wait = NULL;
 int NR_BUFFERS = 0;
 
-static inline void wait_on_buffer(struct buffer_head * bh)
+static inline void wait_buffer_unlock(struct buffer_head * bh)
 {
 	cli();
 	while (bh->b_lock)
@@ -52,7 +52,7 @@ int sys_sync(void)
 	sync_inodes();		/* write out inodes into buffers */
 	bh = start_buffer;
 	for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
-		wait_on_buffer(bh);
+		wait_buffer_unlock(bh);
 		if (bh->b_dirt)
 			ll_rw_block(WRITE,bh);
 	}
@@ -68,7 +68,7 @@ int sync_dev(int dev)
 	for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
 		if (bh->b_dev != dev)
 			continue;
-		wait_on_buffer(bh);
+		wait_buffer_unlock(bh);
 		if (bh->b_dev == dev && bh->b_dirt)
 			ll_rw_block(WRITE,bh);
 	}
@@ -77,7 +77,7 @@ int sync_dev(int dev)
 	for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
 		if (bh->b_dev != dev)
 			continue;
-		wait_on_buffer(bh);
+		wait_buffer_unlock(bh);
 		if (bh->b_dev == dev && bh->b_dirt)
 			ll_rw_block(WRITE,bh);
 	}
@@ -93,7 +93,7 @@ void  invalidate_buffers(int dev)
 	for (i=0 ; i<NR_BUFFERS ; i++,bh++) {
 		if (bh->b_dev != dev)
 			continue;
-		wait_on_buffer(bh);
+		wait_buffer_unlock(bh);
 		if (bh->b_dev == dev)
 			bh->b_uptodate = bh->b_dirt = 0;
 	}
@@ -191,7 +191,7 @@ struct buffer_head * get_hash_table(int dev, int block)
 		if (!(bh=find_buffer(dev,block)))
 			return NULL;
 		bh->b_count++;
-		wait_on_buffer(bh);
+		wait_buffer_unlock(bh);
 		if (bh->b_dev == dev && bh->b_blocknr == block)
 			return bh;
 		bh->b_count--;
@@ -228,12 +228,12 @@ repeat:
 		sleep_on(&buffer_wait);
 		goto repeat;
 	}
-	wait_on_buffer(bh);
+	wait_buffer_unlock(bh);
 	if (bh->b_count)
 		goto repeat;
 	while (bh->b_dirt) {
 		sync_dev(bh->b_dev);
-		wait_on_buffer(bh);
+		wait_buffer_unlock(bh);
 		if (bh->b_count)
 			goto repeat;
 	}
@@ -257,10 +257,10 @@ void brelse(struct buffer_head * buf)
 {
 	if (!buf)
 		return;
-	wait_on_buffer(buf);
+	wait_buffer_unlock(buf);
 	if (!(buf->b_count--))
 		panic("Trying to free free buffer");
-	wake_up(&buffer_wait);
+	wake_up_last(&buffer_wait);
 }
 
 /*
@@ -276,7 +276,7 @@ struct buffer_head * bread(int dev,int block)
 	if (bh->b_uptodate)
 		return bh;
 	ll_rw_block(READ,bh);
-	wait_on_buffer(bh);
+	wait_buffer_unlock(bh);
 	if (bh->b_uptodate)
 		return bh;
 	brelse(bh);
@@ -310,7 +310,7 @@ void bread_page(unsigned long address,int dev,int b[4])
 			bh[i] = NULL;
 	for (i=0 ; i<4 ; i++,address += BLOCK_SIZE)
 		if (bh[i]) {
-			wait_on_buffer(bh[i]);
+			wait_buffer_unlock(bh[i]);
 			if (bh[i]->b_uptodate)
 				COPYBLK((unsigned long) bh[i]->b_data,address);
 			brelse(bh[i]);
@@ -336,12 +336,13 @@ struct buffer_head * breada(int dev,int first, ...)
 		tmp=getblk(dev,first);
 		if (tmp) {
 			if (!tmp->b_uptodate)
-				ll_rw_block(READA,bh);
+//				ll_rw_block(READA,bh);
+				ll_rw_block(READA,tmp); //应该是tmp
 			tmp->b_count--;
 		}
 	}
 	va_end(args);
-	wait_on_buffer(bh);
+	wait_buffer_unlock(bh);
 	if (bh->b_uptodate)
 		return bh;
 	brelse(bh);

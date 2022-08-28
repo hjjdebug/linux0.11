@@ -224,7 +224,7 @@ void copy_to_cooked(struct tty_struct * tty)
 		}
 		PUTCH(c,tty->secondary);
 	}
-	wake_up(&tty->secondary.proc_list);
+	wake_up_last(&tty->secondary.proc_list);
 }
 
 int tty_read(unsigned channel, char * buf, int nr)

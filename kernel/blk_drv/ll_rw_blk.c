@@ -53,7 +53,7 @@ static inline void unlock_buffer(struct buffer_head * bh)
 	if (!bh->b_lock)
 		printk("ll_rw_block.c: buffer not locked\n\r");
 	bh->b_lock = 0;
-	wake_up(&bh->b_wait);
+	wake_up_last(&bh->b_wait);
 }
 
 /*

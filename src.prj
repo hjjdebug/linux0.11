@@ -117,10 +117,4 @@ linux0.11=/home/hjj/gitSource/linux0.11 CD=. filter="*.c *.h *.S *.s" {
   memory.c
   page.s
  }
- tools=tools {
-  bochs=bochs {
-   bochsrc=bochsrc {
-   }
-  }
- }
 }

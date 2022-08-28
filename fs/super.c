@@ -41,7 +41,7 @@ static void free_super(struct super_block * sb)
 {
 	cli();
 	sb->s_lock = 0;
-	wake_up(&(sb->s_wait));
+	wake_up_last(&(sb->s_wait));
 	sti();
 }
 

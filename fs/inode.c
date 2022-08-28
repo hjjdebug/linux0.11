@@ -37,7 +37,7 @@ static inline void lock_inode(struct m_inode * inode)
 static inline void unlock_inode(struct m_inode * inode)
 {
 	inode->i_lock=0;
-	wake_up(&inode->i_wait);
+	wake_up_last(&inode->i_wait);
 }
 
 void invalidate_inodes(int dev)
@@ -155,7 +155,7 @@ void iput(struct m_inode * inode)
 	if (!inode->i_count)
 		panic("iput: trying to free free inode");
 	if (inode->i_pipe) {
-		wake_up(&inode->i_wait);
+		wake_up_last(&inode->i_wait);
 		if (--inode->i_count)
 			return;
 		free_page(inode->i_size);

@@ -80,7 +80,7 @@ struct buffer_head {
 	struct buffer_head * b_next_free;
 };
 
-struct d_inode {
+struct d_inode {		// disk inode
 	unsigned short i_mode;
 	unsigned short i_uid;
 	unsigned long i_size;
@@ -90,7 +90,7 @@ struct d_inode {
 	unsigned short i_zone[9];
 };
 
-struct m_inode {
+struct m_inode {   //memory inode
 	unsigned short i_mode;
 	unsigned short i_uid;
 	unsigned long i_size;
@@ -143,7 +143,7 @@ struct super_block {
 	unsigned char s_dirt;
 };
 
-struct d_super_block {
+struct d_super_block {		// disk super_block
 	unsigned short s_ninodes;
 	unsigned short s_nzones;
 	unsigned short s_imap_blocks;
@@ -155,7 +155,7 @@ struct d_super_block {
 };
 
 struct dir_entry {
-	unsigned short inode;
+	unsigned short inodenr;	//hjj change inode->inodenr
 	char name[NAME_LEN];
 };
 

@@ -103,7 +103,7 @@ static inline void unlock_buffer(struct buffer_head * bh)
 	if (!bh->b_lock)
 		printk(DEVICE_NAME ": free buffer being unlocked\n");
 	bh->b_lock=0;
-	wake_up(&bh->b_wait);
+	wake_up_last(&bh->b_wait);
 }
 
 static inline void end_request(int uptodate)
@@ -118,8 +118,8 @@ static inline void end_request(int uptodate)
 		printk("dev %04x, block %d\n\r",CURRENT->dev,
 			CURRENT->bh->b_blocknr);
 	}
-	wake_up(&CURRENT->waiting);
-	wake_up(&wait_for_request);
+	wake_up_last(&CURRENT->waiting);
+	wake_up_last(&wait_for_request);
 	CURRENT->dev = -1;
 	CURRENT = CURRENT->next;
 }
