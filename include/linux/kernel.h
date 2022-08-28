@@ -3,7 +3,7 @@
  */
 void verify_area(void * addr,int count);
 void panic(const char * str);
-int printf(const char * fmt, ...);
+//int printf(const char * fmt, ...); 未发现使用
 int printk(const char * fmt, ...);
 int tty_write(unsigned ch,char * buf,int count);
 void * malloc(unsigned int size);

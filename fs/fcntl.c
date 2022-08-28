@@ -22,7 +22,7 @@ static int dupfd(unsigned int fd, unsigned int arg)
 	if (arg >= NR_OPEN)
 		return -EINVAL;
 	while (arg < NR_OPEN)
-		if (current->filp[arg])
+		if (current->filp[arg])		// 直到找到空文件槽,更新arg
 			arg++;
 		else
 			break;
@@ -39,9 +39,9 @@ int sys_dup2(unsigned int oldfd, unsigned int newfd)
 	return dupfd(oldfd,newfd);
 }
 
-int sys_dup(unsigned int fildes)
+int sys_dup(unsigned int fd)
 {
-	return dupfd(fildes,0);
+	return dupfd(fd,0);
 }
 
 int sys_fcntl(unsigned int fd, unsigned int cmd, unsigned long arg)

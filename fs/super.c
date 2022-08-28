@@ -45,7 +45,7 @@ static void free_super(struct super_block * sb)
 	sti();
 }
 
-static void wait_on_super(struct super_block * sb)
+static void wait_on_super_unlock(struct super_block * sb)
 {
 	cli();
 	while (sb->s_lock)
@@ -62,7 +62,7 @@ struct super_block * get_super(int dev)
 	s = 0+super_block;
 	while (s < NR_SUPER+super_block)
 		if (s->s_dev == dev) {
-			wait_on_super(s);
+			wait_on_super_unlock(s);
 			if (s->s_dev == dev)
 				return s;
 			s = 0+super_block;
@@ -71,19 +71,19 @@ struct super_block * get_super(int dev)
 	return NULL;
 }
 
-void put_super(int dev)
+void release_super(int dev) //change put_super 为relase_super
 {
 	struct super_block * sb;
 	/* struct m_inode * inode;*/
 	int i;
 
-	if (dev == ROOT_DEV) {
+	if (dev == ROOT_DEV) {		// 根文件系统设备是不能释放的
 		printk("root diskette changed: prepare for armageddon\n\r");
 		return;
 	}
 	if (!(sb = get_super(dev)))
 		return;
-	if (sb->s_imount) {
+	if (sb->s_inode_mount) {		//还有引用就卸载，显示警告
 		printk("Mounted disk changed - tssk, tssk\n\r");
 		return;
 	}
@@ -115,8 +115,8 @@ static struct super_block * read_super(int dev)
 			break;
 	}
 	s->s_dev = dev;
-	s->s_isup = NULL;
-	s->s_imount = NULL;
+	s->s_inode_super = NULL;
+	s->s_inode_mount = NULL;
 	s->s_time = 0;
 	s->s_rd_only = 0;
 	s->s_dirt = 0;
@@ -180,19 +180,19 @@ int sys_umount(char * dev_name)
 	iput(inode);
 	if (dev==ROOT_DEV)
 		return -EBUSY;
-	if (!(sb=get_super(dev)) || !(sb->s_imount))
+	if (!(sb=get_super(dev)) || !(sb->s_inode_mount))
 		return -ENOENT;
-	if (!sb->s_imount->i_mount)
+	if (!sb->s_inode_mount->i_mount)
 		printk("Mounted inode has i_mount=0\n");
 	for (inode=inode_table+0 ; inode<inode_table+NR_INODE ; inode++)
 		if (inode->i_dev==dev && inode->i_count)
 				return -EBUSY;
-	sb->s_imount->i_mount=0;
-	iput(sb->s_imount);
-	sb->s_imount = NULL;
-	iput(sb->s_isup);
-	sb->s_isup = NULL;
-	put_super(dev);
+	sb->s_inode_mount->i_mount=0;
+	iput(sb->s_inode_mount);
+	sb->s_inode_mount = NULL;
+	iput(sb->s_inode_super);
+	sb->s_inode_super = NULL;
+	release_super(dev);
 	sync_dev(dev);
 	return 0;
 }
@@ -225,7 +225,7 @@ int sys_mount(char * dev_name, char * dir_name, int rw_flag)
 		iput(dir_i);
 		return -EBUSY;
 	}
-	if (sb->s_imount) {
+	if (sb->s_inode_mount) {
 		iput(dir_i);
 		return -EBUSY;
 	}
@@ -233,7 +233,7 @@ int sys_mount(char * dev_name, char * dir_name, int rw_flag)
 		iput(dir_i);
 		return -EPERM;
 	}
-	sb->s_imount=dir_i;
+	sb->s_inode_mount=dir_i;
 	dir_i->i_mount=1;
 	dir_i->i_dirt=1;		/* NOTE! we don't iput(dir_i) */
 	return 0;			/* we do that in umount */
@@ -263,7 +263,7 @@ void mount_root(void)
 	if (!(mi=iget(ROOT_DEV,ROOT_INO)))
 		panic("Unable to read root i-node");
 	mi->i_count += 3 ;	/* NOTE! it is logically used 4 times, not 1 */
-	p->s_isup = p->s_imount = mi;
+	p->s_inode_super = p->s_inode_mount = mi;
 	current->pwd = mi;
 	current->root = mi;
 	free=0;

@@ -8,7 +8,9 @@ LD	= ld
 #LDFLAGS = -m elf_i386 -x 
 LDFLAGS = -m elf_i386
 CC	= gcc
-CFLAGS  = -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer -fstrength-reduce #-Wall
+# 如果去掉-fomit-frame-pointer, system.h中 __asm__ ("movw $104,%1\n\t"  有错误  "operand has impossible constraints“,大意是不优化，寄存器不够用了
+#CFLAGS  = -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer -fstrength-reduce #-Wall
+CFLAGS  = -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer #-Wall
 
 CPP	= cpp -nostdinc
 AR	= ar

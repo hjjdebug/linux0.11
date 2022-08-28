@@ -17,7 +17,7 @@ struct m_inode inode_table[NR_INODE]={{0,},};
 static void read_inode(struct m_inode * inode);
 static void write_inode(struct m_inode * inode);
 
-static inline void wait_on_inode(struct m_inode * inode)
+static inline void wait_on_inode_unlock(struct m_inode * inode)
 {
 	cli();
 	while (inode->i_lock)
@@ -47,7 +47,7 @@ void invalidate_inodes(int dev)
 
 	inode = 0+inode_table;
 	for(i=0 ; i<NR_INODE ; i++,inode++) {
-		wait_on_inode(inode);
+		wait_on_inode_unlock(inode);
 		if (inode->i_dev == dev) {
 			if (inode->i_count)
 				printk("inode in use on removed disk\n\r");
@@ -63,7 +63,7 @@ void sync_inodes(void)
 
 	inode = 0+inode_table;
 	for(i=0 ; i<NR_INODE ; i++,inode++) {
-		wait_on_inode(inode);
+		wait_on_inode_unlock(inode);
 		if (inode->i_dirt && !inode->i_pipe)
 			write_inode(inode);
 	}
@@ -151,7 +151,7 @@ void iput(struct m_inode * inode)
 {
 	if (!inode)
 		return;
-	wait_on_inode(inode);
+	wait_on_inode_unlock(inode);
 	if (!inode->i_count)
 		panic("iput: trying to free free inode");
 	if (inode->i_pipe) {
@@ -170,7 +170,7 @@ void iput(struct m_inode * inode)
 	}
 	if (S_ISBLK(inode->i_mode)) {
 		sync_dev(inode->i_zone[0]);
-		wait_on_inode(inode);
+		wait_on_inode_unlock(inode);
 	}
 repeat:
 	if (inode->i_count>1) {
@@ -184,7 +184,7 @@ repeat:
 	}
 	if (inode->i_dirt) {
 		write_inode(inode);	/* we can sleep - so do again */
-		wait_on_inode(inode);
+		wait_on_inode_unlock(inode);
 		goto repeat;
 	}
 	inode->i_count--;
@@ -214,10 +214,10 @@ struct m_inode * get_empty_inode(void)
 					inode_table[i].i_num);
 			panic("No free inodes in mem");
 		}
-		wait_on_inode(inode);
+		wait_on_inode_unlock(inode);
 		while (inode->i_dirt) {
 			write_inode(inode);
-			wait_on_inode(inode);
+			wait_on_inode_unlock(inode);
 		}
 	} while (inode->i_count);
 	memset(inode,0,sizeof(*inode));
@@ -254,7 +254,7 @@ struct m_inode * iget(int dev,int nr)
 			inode++;
 			continue;
 		}
-		wait_on_inode(inode);
+		wait_on_inode_unlock(inode);
 		if (inode->i_dev != dev || inode->i_num != nr) {
 			inode = inode_table;
 			continue;
@@ -264,7 +264,7 @@ struct m_inode * iget(int dev,int nr)
 			int i;
 
 			for (i = 0 ; i<NR_SUPER ; i++)
-				if (super_block[i].s_imount==inode)
+				if (super_block[i].s_inode_mount==inode)
 					break;
 			if (i >= NR_SUPER) {
 				printk("Mounted inode hasn't got sb\n");
@@ -324,15 +324,15 @@ static void write_inode(struct m_inode * inode)
 	}
 	if (!(sb=get_super(inode->i_dev)))
 		panic("trying to write inode without device");
-	block = 2 + sb->s_imap_blocks + sb->s_zmap_blocks +
+	block = 2 + sb->s_imap_blocks + sb->s_zmap_blocks +		//启动块+超级块占了2块,i节点位图块，逻辑位图块, i节点号-1
 		(inode->i_num-1)/INODES_PER_BLOCK;
 	if (!(bh=bread(inode->i_dev,block)))
 		panic("unable to read i-node block");
 	((struct d_inode *)bh->b_data)
-		[(inode->i_num-1)%INODES_PER_BLOCK] =
+		[(inode->i_num-1)%INODES_PER_BLOCK] =				//更新对应的inode
 			*(struct d_inode *)inode;
-	bh->b_dirt=1;
-	inode->i_dirt=0;
+	bh->b_dirt=1;											// 缓冲区与磁盘不一致，故置1
+	inode->i_dirt=0;										// i节点已与缓冲区一致，故清0
 	brelse(bh);
 	unlock_inode(inode);
 }

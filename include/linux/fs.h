@@ -134,8 +134,8 @@ struct super_block {
 	struct buffer_head * s_imap[8];
 	struct buffer_head * s_zmap[8];
 	unsigned short s_dev;
-	struct m_inode * s_isup;
-	struct m_inode * s_imount;
+	struct m_inode * s_inode_super;	//change isup->inode_super
+	struct m_inode * s_inode_mount;	//change imount->inode_mount
 	unsigned long s_time;
 	struct task_struct * s_wait;
 	unsigned char s_lock;

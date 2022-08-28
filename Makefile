@@ -67,6 +67,9 @@ tools/system:	boot/head.o init/main.o \
 	-o tools/system 
 	nm tools/system | grep -v '\(compiled\)\|\(\.o$$\)\|\( [aU] \)\|\(\.\.ng$$\)\|\(LASH[RL]DI\)'| sort > System.map 
 
+init/main.o:init/main.c
+	$(CC) $(CFLAGS) -fcf-protection=none -mmanual-endbr -c -o $*.o $<
+
 kernel/math/math.a:
 	make -C kernel/math
 
@@ -76,13 +79,13 @@ kernel/blk_drv/blk_drv.a:
 kernel/chr_drv/chr_drv.a:
 	make -C kernel/chr_drv
 
-kernel/kernel.o:
+kernel/kernel.o:FORCE
 	make -C kernel
 
-mm/mm.o:
+mm/mm.o:FORCE
 	make -C mm
 
-fs/fs.o:
+fs/fs.o:FORCE
 	make -C fs
 
 lib/lib.a:
@@ -119,6 +122,8 @@ backup: clean
 	(cd .. ; tar cf - linux | compress16 - > backup.Z)
 	sync
 
+.PHONY: FORCE
+
 dep:
 	sed '/\#\#\# Dependencies/q' < Makefile > tmp_make
 	(for i in init/*.c;do echo -n "init/";$(CPP) -M $$i;done) >> tmp_make
@@ -140,10 +145,10 @@ debug:
 	qemu -m 16M -boot a -fda Image -hda $(HDA_IMG) -s -S 
 
 bochs-run:
-	$(BOCHS) -q -f tools/bochs/bochsrc/bochsrc-hd.bxrc	
+	bochs -q -f tools/bochs/bochsrc/bochsrc-hd.bxrc	
 
 bochs-debug:
-	$(BOCHS) -q -f tools/bochs/bochsrc/bochsrc-hd-dbg.bxrc	
+	bochsgdb -q -f tools/bochs/bochsrc/bochsrc-hd-dbg.bxrc	
 
 
 cg: callgraph

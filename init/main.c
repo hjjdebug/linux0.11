@@ -152,7 +152,8 @@ void main(void)		/* This really IS void, no error here. */
 		pause();
 }
 
-static int printf(const char *fmt, ...)
+//static int printf(const char *fmt, ...)
+int printf(const char *fmt, ...)
 {
 	va_list args;
 	int i;

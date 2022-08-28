@@ -6,11 +6,11 @@ floppya: 1_44="Image", status=inserted
 ata0-master: type=disk, path="./hdc-0.11-new.img", mode=flat, cylinders=410, heads=16, spt=38
 boot: a
 log: bochsout.txt
-vga_update_interval: 300000
-keyboard_serial_delay: 200
-keyboard_paste_delay: 100000
+#vga_update_interval: 300000
+#keyboard_serial_delay: 200
+#keyboard_paste_delay: 100000
 mouse: enabled=0
 private_colormap: enabled=0
 fullscreen: enabled=0
 screenmode: name="sample"
-i440fxsupport: enabled=0
+#i440fxsupport: enabled=0

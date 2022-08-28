@@ -27,7 +27,7 @@
 #include <asm/io.h>
 
 extern int end;
-extern void put_super(int);
+extern void release_super(int);
 extern void invalidate_inodes(int);
 
 struct buffer_head * start_buffer = (struct buffer_head *) &end;
@@ -123,7 +123,7 @@ void check_disk_change(int dev)
 		return;
 	for (i=0 ; i<NR_SUPER ; i++)
 		if (super_block[i].s_dev == dev)
-			put_super(super_block[i].s_dev);
+			release_super(super_block[i].s_dev);
 	invalidate_inodes(dev);
 	invalidate_buffers(dev);
 }
