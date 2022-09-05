@@ -22,7 +22,7 @@ int file_read(struct m_inode * inode, struct file * filp, char * buf, int count)
 	if ((left=count)<=0)
 		return 0;
 	while (left) {
-		if ((nr = bmap(inode,(filp->f_pos)/BLOCK_SIZE))) {
+		if ((nr = get_diskBlock(inode,(filp->f_pos)/BLOCK_SIZE))) {
 			if (!(bh=bread(inode->i_dev,nr)))
 				break;
 		} else
@@ -62,7 +62,7 @@ int file_write(struct m_inode * inode, struct file * filp, char * buf, int count
 	else
 		pos = filp->f_pos;
 	while (i<count) {
-		if (!(block = create_block(inode,pos/BLOCK_SIZE)))
+		if (!(block = create_diskBlock(inode,pos/BLOCK_SIZE)))
 			break;
 		if (!(bh=bread(inode->i_dev,block)))
 			break;

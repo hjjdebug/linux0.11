@@ -134,7 +134,7 @@ static struct buffer_head * find_entry(struct m_inode ** dir_i,
 		if ((char *)de >= BLOCK_SIZE+bh->b_data) {
 			brelse(bh);
 			bh = NULL;
-			if (!(block = bmap(*dir_i,i/DIR_ENTRIES_PER_BLOCK)) ||
+			if (!(block = get_diskBlock(*dir_i,i/DIR_ENTRIES_PER_BLOCK)) ||
 			    !(bh = bread((*dir_i)->i_dev,block))) {
 				i += DIR_ENTRIES_PER_BLOCK;
 				continue;
@@ -189,7 +189,7 @@ static struct buffer_head * add_entry(struct m_inode * dir_i,
 		if ((char *)de >= BLOCK_SIZE+bh->b_data) {
 			brelse(bh);
 			bh = NULL;
-			block = create_block(dir_i,i/DIR_ENTRIES_PER_BLOCK);
+			block = create_diskBlock(dir_i,i/DIR_ENTRIES_PER_BLOCK);
 			if (!block)
 				return NULL;
 			if (!(bh = bread(dir_i->i_dev,block))) {
@@ -564,7 +564,7 @@ static int empty_dir(struct m_inode * inode)
 	while (nr<len) {
 		if ((void *) de >= (void *) (bh->b_data+BLOCK_SIZE)) {
 			brelse(bh);
-			block=bmap(inode,nr/DIR_ENTRIES_PER_BLOCK);
+			block=get_diskBlock(inode,nr/DIR_ENTRIES_PER_BLOCK);
 			if (!block) {
 				nr += DIR_ENTRIES_PER_BLOCK;
 				continue;

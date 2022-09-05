@@ -37,7 +37,7 @@ static void lock_super(struct super_block * sb)
 	sti();
 }
 
-static void free_super(struct super_block * sb)
+static void unlock_super(struct super_block * sb)
 {
 	cli();
 	sb->s_lock = 0;
@@ -52,7 +52,7 @@ static void wait_on_super_unlock(struct super_block * sb)
 		sleep_on(&(sb->s_wait));
 	sti();
 }
-
+//获取super_block *
 struct super_block * get_super(int dev)
 {
 	struct super_block * s;
@@ -71,7 +71,7 @@ struct super_block * get_super(int dev)
 	return NULL;
 }
 
-void release_super(int dev) //change put_super 为relase_super
+void release_super(int dev) //change put_super 为release_super
 {
 	struct super_block * sb;
 	/* struct m_inode * inode;*/
@@ -93,10 +93,10 @@ void release_super(int dev) //change put_super 为relase_super
 		brelse(sb->s_imap[i]);
 	for(i=0;i<Z_MAP_SLOTS;i++)
 		brelse(sb->s_zmap[i]);
-	free_super(sb);
+	unlock_super(sb);
 	return;
 }
-
+//从磁盘获取super_block *
 static struct super_block * read_super(int dev)
 {
 	struct super_block * s;
@@ -123,7 +123,7 @@ static struct super_block * read_super(int dev)
 	lock_super(s);
 	if (!(bh = bread(dev,1))) {
 		s->s_dev=0;
-		free_super(s);
+		unlock_super(s);
 		return NULL;
 	}
 	*((struct d_super_block *) s) =
@@ -131,7 +131,7 @@ static struct super_block * read_super(int dev)
 	brelse(bh);
 	if (s->s_magic != SUPER_MAGIC) {
 		s->s_dev = 0;
-		free_super(s);
+		unlock_super(s);
 		return NULL;
 	}
 	for (i=0;i<I_MAP_SLOTS;i++)
@@ -155,12 +155,12 @@ static struct super_block * read_super(int dev)
 		for(i=0;i<Z_MAP_SLOTS;i++)
 			brelse(s->s_zmap[i]);
 		s->s_dev=0;
-		free_super(s);
+		unlock_super(s);
 		return NULL;
 	}
 	s->s_imap[0]->b_data[0] |= 1;
 	s->s_zmap[0]->b_data[0] |= 1;
-	free_super(s);
+	unlock_super(s);
 	return s;
 }
 

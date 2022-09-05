@@ -12,4 +12,6 @@ tools/system
 tags
 hdc-0.11-new.img
 *.swp
+*.bin
+*.out
 

@@ -383,7 +383,7 @@ void do_no_page(unsigned long error_code,unsigned long address)
 /* remember that 1 block is used for header */
 	block = 1 + tmp/BLOCK_SIZE;
 	for (i=0 ; i<4 ; block++,i++)
-		nr[i] = bmap(current->executable,block);
+		nr[i] = get_diskBlock(current->executable,block);
 	bread_page(page,current->executable->i_dev,nr);
 	i = tmp + 4096 - current->end_data;
 	tmp = page + 4096;

@@ -113,8 +113,8 @@ static inline void init_bucket_desc()
 	bdesc->next = free_bucket_desc;
 	free_bucket_desc = first;
 }
-
-void *malloc(unsigned int len)
+// 这个函数根本就没有人调用,改了名也没关系.
+void *my_malloc(unsigned int len)
 {
 	struct _bucket_dir	*bdir;
 	struct bucket_desc	*bdesc;

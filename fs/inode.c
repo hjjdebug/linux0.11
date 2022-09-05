@@ -68,7 +68,9 @@ void sync_inodes(void)
 			write_inode(inode);
 	}
 }
-
+//descpription: block map, 数据块映射到磁盘块处理程序
+// input: inode(i节点指针）, block(数据块号）,create(bool)
+// return:  盘块号（磁盘上的逻辑块号）
 static int _bmap(struct m_inode * inode,int block,int create)
 {
 	struct buffer_head * bh;
@@ -78,7 +80,7 @@ static int _bmap(struct m_inode * inode,int block,int create)
 		panic("_bmap: block<0");
 	if (block >= 7+512+512*512)
 		panic("_bmap: block>big");
-	if (block<7) {
+	if (block<7) { //数据块号<7为直接寻址块
 		if (create && !inode->i_zone[block])
 			if ((inode->i_zone[block]=new_block(inode->i_dev))) {
 				inode->i_ctime=CURRENT_TIME;
@@ -87,7 +89,7 @@ static int _bmap(struct m_inode * inode,int block,int create)
 		return inode->i_zone[block];
 	}
 	block -= 7;
-	if (block<512) {
+	if (block<512) { // 块号在7-512之间为一级间接寻址
 		if (create && !inode->i_zone[7])
 			if ((inode->i_zone[7]=new_block(inode->i_dev))) {
 				inode->i_dirt=1;
@@ -106,7 +108,7 @@ static int _bmap(struct m_inode * inode,int block,int create)
 		brelse(bh);
 		return i;
 	}
-	block -= 512;
+	block -= 512; //块号>512为2级寻址
 	if (create && !inode->i_zone[8])
 		if ((inode->i_zone[8]=new_block(inode->i_dev))) {
 			inode->i_dirt=1;
@@ -137,12 +139,12 @@ static int _bmap(struct m_inode * inode,int block,int create)
 	return i;
 }
 
-int bmap(struct m_inode * inode,int block)
+int get_diskBlock(struct m_inode * inode,int block) //修改bmap ->get_diskBlock
 {
 	return _bmap(inode,block,0);
 }
 
-int create_block(struct m_inode * inode, int block)
+int create_diskBlock(struct m_inode * inode, int block) //修改create_block ->create_diskBlock
 {
 	return _bmap(inode,block,1);
 }
@@ -190,7 +192,7 @@ repeat:
 	inode->i_count--;
 	return;
 }
-
+//inode_table表一共才有32个INODE, 要拿到一个空的inode
 struct m_inode * get_empty_inode(void)
 {
 	struct m_inode * inode;
@@ -240,7 +242,7 @@ struct m_inode * get_pipe_inode(void)
 	inode->i_pipe = 1;
 	return inode;
 }
-
+//获取m_inode *, 输入dev 和 node number
 struct m_inode * iget(int dev,int nr)
 {
 	struct m_inode * inode, * empty;
@@ -290,7 +292,7 @@ struct m_inode * iget(int dev,int nr)
 	read_inode(inode);
 	return inode;
 }
-
+//根据inode的dev和inr, 计算出blocknr,读取该block,覆盖传入的指针结构inode,从而更新了inode元数据
 static void read_inode(struct m_inode * inode)
 {
 	struct super_block * sb;
@@ -310,7 +312,7 @@ static void read_inode(struct m_inode * inode)
 	brelse(bh);
 	unlock_inode(inode);
 }
-
+//只是设立了缓冲区与磁盘不一致标志
 static void write_inode(struct m_inode * inode)
 {
 	struct super_block * sb;
