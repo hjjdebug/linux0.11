@@ -18,8 +18,8 @@
 int sync_dev(int dev);
 void wait_for_keypress(void);
 
-/* set_bit uses setb, as gas doesn't recognize setc */
-#define set_bit(bitnr,addr) ({ \
+/* test_bit uses setb, as gas doesn't recognize setc */
+#define test_bit(bitnr,addr) ({ \
 register int __res ; \
 __asm__("bt %2,%3;setb %%al":"=a" (__res):"a" (0),"r" (bitnr),"m" (*(addr))); \
 __res; })
@@ -269,13 +269,13 @@ void mount_root(void)
 	free=0;
 	i=p->s_nzones;
 	while (-- i >= 0)
-		if (!set_bit(i&8191,p->s_zmap[i>>13]->b_data))
+		if (!test_bit(i&8191,p->s_zmap[i>>13]->b_data))
 			free++;
 	printk("%d/%d free blocks\n\r",free,p->s_nzones);
 	free=0;
 	i=p->s_ninodes+1;
 	while (-- i >= 0)
-		if (!set_bit(i&8191,p->s_imap[i>>13]->b_data))
+		if (!test_bit(i&8191,p->s_imap[i>>13]->b_data))
 			free++;
 	printk("%d/%d free inodes\n\r",free,p->s_ninodes);
 }

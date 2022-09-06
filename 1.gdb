@@ -27,7 +27,8 @@ b main
 #b copy_process
 #b sys_setup
 b mount_root
+b read_super
 #b tty_write
-b iget
-b read_inode
+#b iget
+#b read_inode
 c

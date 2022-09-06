@@ -133,7 +133,7 @@ repeat:
 	req->dev = bh->b_dev;
 	req->cmd = rw;
 	req->errors=0;
-	req->sector = bh->b_blocknr<<1;
+	req->sector = bh->b_blocknr<<1;	//每次读取2个扇区块，
 	req->nr_sectors = 2;
 	req->buffer = bh->b_data;
 	req->waiting = NULL;

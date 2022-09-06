@@ -268,7 +268,7 @@ void brelse(struct buffer_head * buf)
  * it. It returns NULL if the block was unreadable.
  */
 struct buffer_head * bread(int dev,int block)
-{
+{ //此处一次读取1024字节， 2*512bytes, 可认为一个磁盘块是2个扇区块
 	struct buffer_head * bh;
 
 	if (!(bh=getblk(dev,block)))
