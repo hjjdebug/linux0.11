@@ -42,7 +42,7 @@ static int permission(struct m_inode * inode,int mask)
 	int mode = inode->i_mode;
 
 /* special case: not even root can read/write a deleted file */
-	if (inode->i_dev && !inode->i_nlinks)
+	if (inode->i_dev && !inode->i_nlinks) // 0 无权限，非0，有权限
 		return 0;
 	else if (current->euid==inode->i_uid)
 		mode >>= 6;
@@ -90,7 +90,7 @@ static int match(int len,const char * name,struct dir_entry * de)
  */
 static struct buffer_head * find_entry(struct m_inode ** dir_i,
 	const char * name, int namelen, struct dir_entry ** res_dir)
-{
+{	// 在指定目录 dir_i, 查找一个目录项
 	int entries;
 	int block,i;
 	struct buffer_head * bh;
@@ -135,17 +135,17 @@ static struct buffer_head * find_entry(struct m_inode ** dir_i,
 			brelse(bh);
 			bh = NULL;
 			if (!(block = get_diskBlock(*dir_i,i/DIR_ENTRIES_PER_BLOCK)) ||
-			    !(bh = bread((*dir_i)->i_dev,block))) {
+			    !(bh = bread((*dir_i)->i_dev,block))) { //当目录项超过一块时，先拿到下一块的块号，再读数据
 				i += DIR_ENTRIES_PER_BLOCK;
 				continue;
 			}
 			de = (struct dir_entry *) bh->b_data;
 		}
-		if (match(namelen,name,de)) {
+		if (match(namelen,name,de)) { // 名称匹配
 			*res_dir = de;
 			return bh;
 		}
-		de++;
+		de++; //指向下一个目录项
 		i++;
 	}
 	brelse(bh);
@@ -540,7 +540,7 @@ int sys_mkdir(const char * pathname, int mode)
 /*
  * routine to check that the specified directory is empty (for rmdir)
  */
-static int empty_dir(struct m_inode * inode)
+static int is_empty_dir(struct m_inode * inode)
 {
 	int nr,block;
 	int len;
@@ -560,7 +560,7 @@ static int empty_dir(struct m_inode * inode)
 		return 0;
 	}
 	nr = 2;
-	de += 2;
+	de += 2; //跳过., ..,两个特殊目录
 	while (nr<len) {
 		if ((void *) de >= (void *) (bh->b_data+BLOCK_SIZE)) {
 			brelse(bh);
@@ -573,7 +573,7 @@ static int empty_dir(struct m_inode * inode)
 				return 0;
 			de = (struct dir_entry *) bh->b_data;
 		}
-		if (de->inodenr) {
+		if (de->inodenr) { //inodenr 不为0，则目录不空，返回0
 			brelse(bh);
 			return 0;
 		}
@@ -581,7 +581,7 @@ static int empty_dir(struct m_inode * inode)
 		nr++;
 	}
 	brelse(bh);
-	return 1;
+	return 1;		//都查过了，目录为空
 }
 
 int sys_rmdir(const char * name)
@@ -639,7 +639,7 @@ int sys_rmdir(const char * name)
 		brelse(bh);
 		return -ENOTDIR;
 	}
-	if (!empty_dir(inode)) {
+	if (!is_empty_dir(inode)) {
 		iput(inode);
 		iput(dir_i);
 		brelse(bh);

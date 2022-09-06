@@ -145,11 +145,11 @@ int sys_open(const char * filename,int flag,int mode)
 	for(fd=0 ; fd<NR_OPEN ; fd++)
 		if (!current->filp[fd])
 			break;
-	if (fd>=NR_OPEN)
+	if (fd>=NR_OPEN)			//每个进程可以同时打开20个fd
 		return -EINVAL;
 	current->close_on_exec &= ~(1<<fd);
 	f=0+file_table;
-	for (i=0 ; i<NR_FILE ; i++,f++)
+	for (i=0 ; i<NR_FILE ; i++,f++) //文件最多64个
 		if (!f->f_count) break;
 	if (i>=NR_FILE)
 		return -EINVAL;

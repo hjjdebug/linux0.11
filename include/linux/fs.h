@@ -173,8 +173,8 @@ extern void floppy_off(unsigned int dev);
 extern void truncate(struct m_inode * inode);
 extern void sync_inodes(void);
 extern void wait_on(struct m_inode * inode);
-extern int get_diskBlock(struct m_inode * inode,int block);		//从块号block 获取对应的磁盘号,diskBlock
-extern int create_diskBlock(struct m_inode * inode,int block);	//从块号block 创建对应的磁盘号,diskBlock
+extern int get_diskBlock(struct m_inode * inode,int block_seq);		//从块号block_seq 获取对应的磁盘号,diskBlock
+extern int create_diskBlock(struct m_inode * inode,int block_seq);	//从块号block_seq 创建对应的磁盘号,diskBlock
 extern struct m_inode * namei(const char * pathname);
 extern int open_namei(const char * pathname, int flag, int mode,
 	struct m_inode ** res_inode);
