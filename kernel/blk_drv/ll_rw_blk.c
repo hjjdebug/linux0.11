@@ -18,7 +18,7 @@
  * The request-struct contains all necessary data
  * to load a nr of sectors into memory
  */
-struct request request[NR_REQUEST];
+struct blk_request request[NR_REQUEST];
 
 /*
  * used to wait on when there are no free requests
@@ -61,9 +61,9 @@ static inline void unlock_buffer(struct buffer_head * bh)
  * It disables interrupts so that it can muck with the
  * request-lists in peace.
  */
-static void add_request(struct blk_dev_struct * dev, struct request * req)
+static void add_request(struct blk_dev_struct * dev, struct blk_request * req)
 {
-	struct request * tmp;
+	struct blk_request * tmp;
 
 	req->next = NULL;
 	cli();
@@ -87,7 +87,7 @@ static void add_request(struct blk_dev_struct * dev, struct request * req)
 
 static void make_request(int major,int rw, struct buffer_head * bh)
 {
-	struct request * req;
+	struct blk_request * req;
 	int rw_ahead;
 
 /* WRITEA/READA is special case - it is not really needed, so if the */

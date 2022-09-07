@@ -20,7 +20,7 @@
  * paging, 'bh' is NULL, and 'waiting' is used to wait for
  * read/write completion.
  */
-struct request {
+struct blk_request {
 	int dev;		/* -1 if no request */
 	int cmd;		/* READ or WRITE */
 	int errors;
@@ -29,7 +29,7 @@ struct request {
 	char * buffer;
 	struct task_struct * waiting;
 	struct buffer_head * bh;
-	struct request * next;
+	struct blk_request * next;
 };
 
 /*
@@ -44,11 +44,11 @@ struct request {
 
 struct blk_dev_struct {
 	void (*request_fn)(void);
-	struct request * current_request;
+	struct blk_request * current_request;
 };
 
 extern struct blk_dev_struct blk_dev[NR_BLK_DEV];
-extern struct request request[NR_REQUEST];
+extern struct blk_request request[NR_REQUEST];
 extern struct task_struct * wait_for_request;
 
 #ifdef MAJOR_NR
