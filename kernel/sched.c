@@ -198,29 +198,29 @@ void wake_up_last(struct task_struct **p)
  * proper. They are here because the floppy needs a timer, and this
  * was the easiest way of doing it.
  */
-static struct task_struct * wait_motor[4] = {NULL,NULL,NULL,NULL};
-static int  mon_timer[4]={0,0,0,0};
-static int moff_timer[4]={0,0,0,0};
-unsigned char current_DOR = 0x0C;
+static struct task_struct * wait_motor[4] = {NULL,NULL,NULL,NULL}; //等待电机的进程数组
+static int  mon_timer[4]={0,0,0,0}; //电机启动所需时间
+static int moff_timer[4]={0,0,0,0}; //电机维持时间
+unsigned char current_DOR = 0x0C;	//bit2:使能FDC, bit3:使能DMA&IO接口
 
 int ticks_to_floppy_on(unsigned int nr)
 {
 	extern unsigned char selected;
-	unsigned char mask = 0x10 << nr;
+	unsigned char mask = 0x10 << nr; //nr,软盘号0-3
 
 	if (nr>3)
 		panic("floppy_on: nr>3");
 	moff_timer[nr]=10000;		/* 100 s = very big :-) */
 	cli();				/* use floppy_off to turn it off */
-	mask |= current_DOR;
+	mask |= current_DOR; //DOR->digital output registor
 	if (!selected) {
 		mask &= 0xFC;
 		mask |= nr;
 	}
-	if (mask != current_DOR) {
+	if (mask != current_DOR) { //若想等，则上次输出过该值，不等才操作.
 		outb(mask,FD_DOR);
 		if ((mask ^ current_DOR) & 0xf0)
-			mon_timer[nr] = HZ/2;
+			mon_timer[nr] = HZ/2;	//设置mon_timer为0.5秒
 		else if (mon_timer[nr] < 2)
 			mon_timer[nr] = 2;
 		current_DOR = mask;
@@ -233,13 +233,13 @@ void floppy_on(unsigned int nr)
 {
 	cli();
 	while (ticks_to_floppy_on(nr))
-		sleep_on(nr+wait_motor);
+		sleep_on(nr+wait_motor); //挂起当前任务，大约0.5秒，等电机稳定后再唤醒该任务
 	sti();
 }
 
 void floppy_off(unsigned int nr)
 {
-	moff_timer[nr]=3*HZ;
+	moff_timer[nr]=3*HZ; //300个滴答，3s, 到时间后再关闭电机
 }
 
 void do_floppy_timer(void)
@@ -248,14 +248,14 @@ void do_floppy_timer(void)
 	unsigned char mask = 0x10;
 
 	for (i=0 ; i<4 ; i++,mask <<= 1) {
-		if (!(mask & current_DOR))
+		if (!(mask & current_DOR)) //该电机未开，继续
 			continue;
 		if (mon_timer[i]) {
-			if (!--mon_timer[i])
-				wake_up_last(i+wait_motor);
+			if (!--mon_timer[i])	
+				wake_up_last(i+wait_motor); //唤醒时间到，唤醒等待的任务
 		} else if (!moff_timer[i]) {
 			current_DOR &= ~mask;
-			outb(current_DOR,FD_DOR);
+			outb(current_DOR,FD_DOR);	//关闭时间到，关闭电机
 		} else
 			moff_timer[i]--;
 	}
@@ -327,8 +327,8 @@ void do_timer(long cpl)
 			(fn)();
 		}
 	}
-	if (current_DOR & 0xf0)
-		do_floppy_timer();
+	if (current_DOR & 0xf0) //bit7:启动电动机D,bit6:启动电动机C,bit5:启动电动机B,bit4:启动电动机A
+		do_floppy_timer();  //如果开启了电动机，则执行软盘timer检查
 	if ((--current->counter)>0) return;
 	current->counter=0;
 	if (!cpl) return;

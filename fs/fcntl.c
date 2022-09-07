@@ -22,7 +22,7 @@ static int dupfd(unsigned int fd, unsigned int arg)
 	if (arg >= NR_OPEN)
 		return -EINVAL;
 	while (arg < NR_OPEN)
-		if (current->filp[arg])		// 直到找到空文件槽,更新arg
+		if (current->filp[arg])		// 直到找到空文件槽,否则更新arg
 			arg++;
 		else
 			break;
@@ -41,7 +41,7 @@ int sys_dup2(unsigned int oldfd, unsigned int newfd)
 
 int sys_dup(unsigned int fd)
 {
-	return dupfd(fd,0);
+	return dupfd(fd,0); //描述符从0开始找起
 }
 
 int sys_fcntl(unsigned int fd, unsigned int cmd, unsigned long arg)
@@ -53,7 +53,7 @@ int sys_fcntl(unsigned int fd, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 		case F_DUPFD:
 			return dupfd(fd,arg);
-		case F_GETFD:
+		case F_GETFD: //获取close_on_exec bit 位
 			return (current->close_on_exec>>fd)&1;
 		case F_SETFD:
 			if (arg&1)

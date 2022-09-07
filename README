@@ -2,19 +2,25 @@
 # https://blog.csdn.net/hejinjing_tom_com
 # <15373661380@qq.com>
 #  2019年 08月 05日 星期一 11:51:27 CST
-enviroment: Ubuntu14.04, gcc4.8.4(默认), bochs2.4.6(自编译带gdb 调试功能), qemu(默认)
+# enviroment: Ubuntu14.04, gcc4.8.4(默认), bochs2.4.6(自编译带gdb 调试功能), qemu(默认)
+#  2022年 09月 06日 星期二 19:22:57 CST
+# enviroment: Ubuntu20.04, gcc9.4.0, bochs2.4.6(自编译带gdb 调试功能), qemu(默认)
+----------------------------------------
 run linux-0.11 
+----------------------------------------
 $ make run
 或者
 $ make bochs-run
 
+----------------------------------------
 debug linux-0.11 
+----------------------------------------
 $ make debug 
 或者
 $ make bochs-debug
 
 另一窗口:
 $ gdb
-$ source init1
+$ source 1.gdb
 
 enjoy it!

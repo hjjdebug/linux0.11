@@ -124,7 +124,7 @@ struct task_struct * wait_on_floppy_select = NULL;
 
 void floppy_deselect(unsigned int nr)
 {
-	if (nr != (current_DOR & 3))
+	if (nr != (current_DOR & 3)) //bit1,0软驱选择 0->A,1->B,2->C,3->D
 		printk("floppy_deselect: drive not selected\n\r");
 	selected = 0;
 	wake_up_last(&wait_on_floppy_select);
@@ -394,10 +394,10 @@ static void reset_floppy(void)
 	printk("Reset-floppy called\n\r");
 	cli();
 	do_floppy = reset_interrupt;
-	outb_p(current_DOR & ~0x04,FD_DOR);
+	outb_p(current_DOR & ~0x04,FD_DOR); //bit2, 使能FDC
 	for (i=0 ; i<100 ; i++)
 		__asm__("nop");
-	outb(current_DOR,FD_DOR);
+	outb(current_DOR,FD_DOR);	//把bit2拉低了一会.
 	sti();
 }
 
@@ -407,7 +407,7 @@ static void floppy_on_interrupt(void)
 	selected = 1;
 	if (current_drive != (current_DOR & 3)) {
 		current_DOR &= 0xFC;
-		current_DOR |= current_drive;
+		current_DOR |= current_drive;	//选择软盘
 		outb(current_DOR,FD_DOR);
 		add_timer(2,&transfer);
 	} else

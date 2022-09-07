@@ -138,9 +138,9 @@ static struct super_block * read_super(int dev)
 		s->s_imap[i] = NULL;
 	for (i=0;i<Z_MAP_SLOTS;i++)
 		s->s_zmap[i] = NULL;
-	block=2;
+	block=2;// 第0块为boot块，第1块为super块,第2块为inode map 块，1块（1024byte)
 	for (i=0 ; i < s->s_imap_blocks ; i++)
-		if ((s->s_imap[i]=bread(dev,block)))
+		if ((s->s_imap[i]=bread(dev,block))) //bread 返回的是buffer_header*
 			block++;
 		else
 			break;
@@ -158,7 +158,7 @@ static struct super_block * read_super(int dev)
 		unlock_super(s);
 		return NULL;
 	}
-	s->s_imap[0]->b_data[0] |= 1;
+	s->s_imap[0]->b_data[0] |= 1;  // 将地址或上1，另有用途
 	s->s_zmap[0]->b_data[0] |= 1;
 	unlock_super(s);
 	return s;

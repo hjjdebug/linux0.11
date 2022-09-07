@@ -305,11 +305,11 @@ static void read_inode(struct m_inode * inode)
 		panic("trying to read inode without dev");
 	block = 2 + sb->s_imap_blocks + sb->s_zmap_blocks +		//2 为一个启动块，一个超级块,后面是imap+zmap,再后面是inode 块!
 		(inode->i_num-1)/INODES_PER_BLOCK;
-	if (!(bh=bread(inode->i_dev,block)))
+	if (!(bh=bread(inode->i_dev,block)))			//找到磁盘块,读磁盘
 		panic("unable to read i-node block");
 	*(struct d_inode *)inode =
 		((struct d_inode *)bh->b_data)
-			[(inode->i_num-1)%INODES_PER_BLOCK];
+			[(inode->i_num-1)%INODES_PER_BLOCK];	//找到对应的项
 	brelse(bh);
 	unlock_inode(inode);
 }

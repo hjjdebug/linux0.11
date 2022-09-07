@@ -15,7 +15,7 @@ __asm__ __volatile__ ("cld\n\t" \
 	"rep\n\t" \
 	"stosl" \
 	::"a" (0),"c" (BLOCK_SIZE/4),"D" ((long) (addr)))
-
+//bit test and set 指令，测试地址%3的偏移位%2，保存到cf中,设置该bit,设置al返回
 #define set_bit(nr,addr) ({\
 register int res ; \
 __asm__ __volatile__("btsl %2,%3\n\tsetb %%al": \
