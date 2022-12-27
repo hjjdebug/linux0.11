@@ -107,7 +107,7 @@ void tty_init(void)
 	rs_init();
 	con_init();
 }
-
+//ctrl-c 处理程序,向进程组(前台）所有进程发送信号mask(一般是SIGINT)
 void tty_intr(struct tty_struct * tty, int mask)
 {
 	int i;
@@ -115,7 +115,7 @@ void tty_intr(struct tty_struct * tty, int mask)
 	if (tty->pgrp <= 0)
 		return;
 	for (i=0;i<NR_TASKS;i++)
-		if (task[i] && task[i]->pgrp==tty->pgrp)
+		if (task[i] && task[i]->pgrp==tty->pgrp) //tty所指的进程组（前台进程组）
 			task[i]->signal |= mask;
 }
 
@@ -147,7 +147,7 @@ void copy_to_cooked(struct tty_struct * tty)
 	signed char c;
 
 	while (!EMPTY(tty->read_q) && !FULL(tty->secondary)) {
-		GETCH(tty->read_q,c);
+		GETCH(tty->read_q,c); //从tail指针取一个字符
 		if (c==13)
 			if (I_CRNL(tty))
 				c=10;
@@ -340,7 +340,7 @@ int tty_write(unsigned channel, char * buf, int nr)
  * anyway, which is good, as the task sleeping might be
  * totally innocent.
  */
-void do_tty_interrupt(int tty)
+void do_tty_interrupt(int tty) //tty,终端号0,1,2
 {
 	copy_to_cooked(tty_table+tty);
 }

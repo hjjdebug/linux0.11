@@ -41,31 +41,31 @@ keyboard_interrupt:
 	pushl %edx
 	push %ds
 	push %es
-	movl $0x10,%eax
+	movl $0x10,%eax  //将ds,es置为内核段
 	mov %ax,%ds
 	mov %ax,%es
 	xor %al,%al		/* %eax is scan code */
-	inb $0x60,%al
+	inb $0x60,%al	//从0x60端口读取扫描码
 	cmpb $0xe0,%al
 	je set_e0
-	cmpb $0xe1,%al
+	cmpb $0xe1,%al	// set_e0,set_e1
 	je set_e1
-	call *key_table(,%eax,4)
+	call *key_table(,%eax,4)  //执行扫描码转换
 	movb $0,e0
-e0_e1:	inb $0x61,%al
+e0_e1:	inb $0x61,%al		//取键盘端口b 状态
 	jmp 1f
 1:	jmp 1f
-1:	orb $0x80,%al
+1:	orb $0x80,%al		//bit7 置1
 	jmp 1f
 1:	jmp 1f
-1:	outb %al,$0x61
+1:	outb %al,$0x61		//禁止键盘
 	jmp 1f
 1:	jmp 1f
-1:	andb $0x7F,%al
-	outb %al,$0x61
-	movb $0x20,%al
+1:	andb $0x7F,%al		//bit7 置0
+	outb %al,$0x61		//使竜键盘
+	movb $0x20,%al		//向8259芯片发送EOI 中断结束信号
 	outb %al,$0x20
-	pushl $0
+	pushl $0			//console 编号
 	call do_tty_interrupt
 	addl $4,%esp
 	pop %es
@@ -88,33 +88,33 @@ set_e1:	movb $2,e0
 put_queue:
 	pushl %ecx
 	pushl %edx
-	movl table_list,%edx		# read-queue for console
-	movl head(%edx),%ecx
-1:	movb %al,buf(%edx,%ecx)
-	incl %ecx
-	andl $size-1,%ecx
-	cmpl tail(%edx),%ecx		# buffer full - discard everything
+	movl table_list,%edx		# read-queue for console, 取tty_table[0].read_q送edx
+	movl head(%edx),%ecx		//head->4, 取reqd_q的head(头指针）送ecx
+1:	movb %al,buf(%edx,%ecx)		//buf->16	将al 存人read_q的buf的头指针处
+	incl %ecx					//头指针加1
+	andl $size-1,%ecx			//size=1024
+	cmpl tail(%edx),%ecx		# buffer full - discard everything tail->8
 	je 3f
-	shrdl $8,%ebx,%eax
-	je 2f
-	shrl $8,%ebx
+	shrdl $8,%ebx,%eax			//将ebx右移8bit到eax中，ebx不变
+	je 2f						//为0跳2
+	shrl $8,%ebx				//ebx右移8bit,回跳1
 	jmp 1b
-2:	movl %ecx,head(%edx)
-	movl proc_list(%edx),%ecx
+2:	movl %ecx,head(%edx)		//保存头指针
+	movl proc_list(%edx),%ecx	//取进程指针
 	testl %ecx,%ecx
 	je 3f
-	movl $0,(%ecx)
+	movl $0,(%ecx)				//把0赋值给proc_list->state， 就绪
 3:	popl %edx
 	popl %ecx
 	ret
 
-ctrl:	movb $0x04,%al
+ctrl:	movb $0x04,%al	//bit2
 	jmp 1f
-alt:	movb $0x10,%al
-1:	cmpb $0,e0
-	je 2f
-	addb %al,%al
-2:	orb %al,mode
+alt:	movb $0x10,%al	//bit5
+1:	cmpb $0,e0			//e0 为0吗？e0为1表示右边的ctrl,alt
+	je 2f				//等于0转走
+	addb %al,%al		// al二进制相加,变成相应的mode
+2:	orb %al,mode		//设置mode标志中对应bit位
 	ret
 unctrl:	movb $0x04,%al
 	jmp 1f
@@ -123,7 +123,7 @@ unalt:	movb $0x10,%al
 	je 2f
 	addb %al,%al
 2:	notb %al
-	andb %al,mode
+	andb %al,mode 	//将相应的位清除
 	ret
 
 lshift:
@@ -146,10 +146,10 @@ caps:	testb $0x80,mode
 	orb $0x80,mode
 set_leds:
 	call kb_wait
-	movb $0xed,%al		/* set leds command */
+	movb $0xed,%al		/* set leds command */ //发送0xed 到键盘控制器0x60端口
 	outb %al,$0x60
 	call kb_wait
-	movb leds,%al
+	movb leds,%al		//发送leds 到0x60端口
 	outb %al,$0x60
 	ret
 uncaps:	andb $0x7f,mode
@@ -160,39 +160,39 @@ scroll:
 num:	xorb $2,leds
 	jmp set_leds
 
-/*
+/* 方向键,数字键盘方向键处理
  *  curosr-key/numeric keypad cursor keys are handled here.
  *  checking for numeric keypad etc.
  */
 cursor:
-	subb $0x47,%al
+	subb $0x47,%al	//0x47 数字小键盘
 	jb 1f
 	cmpb $12,%al
 	ja 1f
-	jne cur2		/* check for ctrl-alt-del */
-	testb $0x0c,mode
+	jne cur2		/* check for ctrl-alt-del */ //想等是del键(0x53)
+	testb $0x0c,mode	//ctrl键?
 	je cur2
-	testb $0x30,mode
+	testb $0x30,mode	//alt键?
 	jne reboot
-cur2:	cmpb $0x01,e0		/* e0 forces cursor movement */
+cur2:	cmpb $0x01,e0		/* e0 forces cursor movement */ //e0 置位了吗?
 	je cur
-	testb $0x02,leds	/* not num-lock forces cursor */
+	testb $0x02,leds	/* not num-lock forces cursor */ //num-lock键置位了码？
 	je cur
-	testb $0x03,mode	/* shift forces cursor */
+	testb $0x03,mode	/* shift forces cursor */ //shift键同时按下吗？
 	jne cur
 	xorl %ebx,%ebx
-	movb num_table(%eax),%al
+	movb num_table(%eax),%al //把数字放入队列
 	jmp put_queue
 1:	ret
 
-cur:	movb cur_table(%eax),%al
+cur:	movb cur_table(%eax),%al  //方向键处理程序
 	cmpb $'9,%al
 	ja ok_cur
-	movb $'~,%ah
-ok_cur:	shll $16,%eax
-	movw $0x5b1b,%ax
+	movb $'~,%ah		/* 比9小(5,6,2,3),把~g给ah */
+ok_cur:	shll $16,%eax	//将ax移到高字
+	movw $0x5b1b,%ax	//0x5b1b"esc [" 给ax , 1b是esc
 	xorl %ebx,%ebx
-	jmp put_queue
+	jmp put_queue		//放入队列
 
 #if defined(KBD_FR)
 num_table:
@@ -204,30 +204,30 @@ num_table:
 cur_table:
 	.ascii "HA5 DGC YB623"
 
-/*
+/* 功能键处理程序
  * this routine handles function keys
  */
 func:
 	pushl %eax
 	pushl %ecx
 	pushl %edx
-	call show_stat
+	call show_stat	//显示各任务状态
 	popl %edx
 	popl %ecx
 	popl %eax
-	subb $0x3B,%al
+	subb $0x3B,%al //键F1的扫描码是0x3B, 此处转为索引
 	jb end_func
 	cmpb $9,%al
-	jbe ok_func
-	subb $18,%al
-	cmpb $10,%al
+	jbe ok_func		//功能键是F1-F10吗？
+	subb $18,%al	//F11(0x57),F12(0x58)扫描码
+	cmpb $10,%al	//0x57-0x3B = 28
 	jb end_func
 	cmpb $11,%al
 	ja end_func
 ok_func:
 	cmpl $4,%ecx		/* check that there is enough room */
-	jl end_func
-	movl func_table(,%eax,4),%eax
+	jl end_func			// 要放入4个字符，若无空间，返回
+	movl func_table(,%eax,4),%eax //取功能键对应的字符序列
 	xorl %ebx,%ebx
 	jmp put_queue
 end_func:
@@ -243,16 +243,16 @@ func_table:
 
 #if	defined(KBD_FINNISH)
 key_map:
-	.byte 0,27
-	.ascii "1234567890+'"
+	.byte 0,27				//扫描码0x00,0x01对应的ascii码
+	.ascii "1234567890+'"	//扫描码0x002-0x0d 对应的ascii码
 	.byte 127,9
 	.ascii "qwertyuiop}"
 	.byte 0,13,0
 	.ascii "asdfghjkl|{"
 	.byte 0,0
 	.ascii "'zxcvbnm,.-"
-	.byte 0,'*,0,32		/* 36-39 */
-	.fill 16,1,0		/* 3A-49 */
+	.byte 0,'*,0,32		/* 36-39 */ //扫描码 0x36-0x39对应的ascii码
+	.fill 16,1,0		/* 3A-49 */ //0x3A-0x49 .fill repeat,size,value copy 16次1byte,0
 	.byte '-,0,0,0,'+	/* 4A-4E */
 	.byte 0,0,0,0,0,0,0	/* 4F-55 */
 	.byte '<
@@ -451,36 +451,36 @@ alt_map:
  * and which have just one character returns.
  */
 do_self:
-	lea alt_map,%ebx
-	testb $0x20,mode		/* alt-gr */
+	lea alt_map,%ebx		//取alt_map 地址
+	testb $0x20,mode		/* alt-gr */ //右alt键是否同时按下?
 	jne 1f
-	lea shift_map,%ebx
-	testb $0x03,mode
+	lea shift_map,%ebx		//取shift_map 地址
+	testb $0x03,mode		//测试shift建是否同时按下
 	jne 1f
-	lea key_map,%ebx
-1:	movb (%ebx,%eax),%al
+	lea key_map,%ebx		//取正常key_map
+1:	movb (%ebx,%eax),%al	//将扫描码做索引值，取对应ascii
 	orb %al,%al
-	je none
-	testb $0x4c,mode		/* ctrl or caps */
-	je 2f
-	cmpb $'a,%al
+	je none					// 为0返回
+	testb $0x4c,mode		/* ctrl or caps */ //判断ctrl 或caps 是否按下
+	je 2f					//无，向前跳转
+	cmpb $'a,%al			/*与ascii 'a' 相比 */
 	jb 2f
-	cmpb $'},%al
+	cmpb $'},%al			/*与ascii '}' 相比 */
 	ja 2f
-	subb $32,%al
+	subb $32,%al			//将al 转换为大写字符
 2:	testb $0x0c,mode		/* ctrl */
 	je 3f
-	cmpb $64,%al
+	cmpb $64,%al		//ctrl 健按下，与$64-96比较，在此范围减64变为0-32之间控制字符
 	jb 3f
 	cmpb $64+32,%al
 	jae 3f
 	subb $64,%al
-3:	testb $0x10,mode		/* left alt */
+3:	testb $0x10,mode		/* left alt */ //测试left-alt
 	je 4f
-	orb $0x80,%al
-4:	andl $0xff,%eax
+	orb $0x80,%al			// bit7 置位
+4:	andl $0xff,%eax			//清除eax高字及ah寄存器，只留al
 	xorl %ebx,%ebx
-	call put_queue
+	call put_queue			//放入队列
 none:	ret
 
 /*
@@ -571,8 +571,8 @@ key_table:
  */
 kb_wait:
 	pushl %eax
-1:	inb $0x64,%al
-	testb $0x02,%al
+1:	inb $0x64,%al		//读键盘控制器状态
+	testb $0x02,%al		//测试是否为空
 	jne 1b
 	popl %eax
 	ret
@@ -582,7 +582,7 @@ kb_wait:
  */
 reboot:
 	call kb_wait
-	movw $0x1234,0x472	/* don't do memory check */
+	movw $0x1234,0x472	/* don't do memory check */ //bios会查询0x472内存的值，若为0x1234会热启动,跳过内存检测
 	movb $0xfc,%al		/* pulse reset and A20 low */
-	outb %al,$0x64
+	outb %al,$0x64		// 向系统复位和使A20线置低. 
 die:	jmp die
