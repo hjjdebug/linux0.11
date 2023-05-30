@@ -10,8 +10,16 @@ tools/calltree-2.3.tar.gz.orig
 tools/calltree-2.3/
 tools/system
 tags
+TAGS
+1.*
 hdc-0.11-new.img
 *.swp
 *.bin
 *.out
+*.E
+*.dD
+*.dU
+*.dM
+1.gdb
+
 
