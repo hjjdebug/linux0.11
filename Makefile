@@ -138,11 +138,13 @@ cscope:
 	cscope -Rbkq
 
 run:
-	qemu -m 16M -boot a -fda Image -hda $(HDA_IMG)
+#	qemu -m 16M -boot a -fda Image -hda $(HDA_IMG)
+	qemu -m 16M -boot a -drive if=floppy,file=Image,format=raw -drive file=$(HDA_IMG),format=raw
 
 debug:
 #	qemu -m 16M -boot a -fda Image -hda $(HDA_IMG) -s -S -nographic -serial '/dev/ttyS0'
-	qemu -m 16M -boot a -fda Image -hda $(HDA_IMG) -s -S 
+#	qemu -m 16M -boot a -fda Image -hda $(HDA_IMG) -s -S 
+	qemu -m 16M -boot a -drive if=floppy,file=Image,format=raw -drive file=$(HDA_IMG),format=raw -s -S
 
 bochs-run:
 	bochs -q -f tools/bochs/bochsrc/bochsrc-hd.bxrc	

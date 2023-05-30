@@ -2,10 +2,11 @@ file tools/system
 target remote localhost:1234
 set follow-fork-mode child
 set print pretty
+#b *0
+b main
 #b ticks_to_floppy_on
 #b mem_init
 #b get_free_page
-b main
 #b init/main.c:141
 #b init/main.c:142
 # main.c 中init 下都不能中断下来？不知何故,只有main函数内语句可中断
@@ -26,9 +27,10 @@ b main
 #b system_call
 #b copy_process
 #b sys_setup
-b mount_root
-b read_super
+#b mount_root
+#b read_super
 #b tty_write
 #b iget
 #b read_inode
+b printf
 c

@@ -1,0 +1,180 @@
+make bootsect -C boot
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/boot'
+as --32 -g -o bootsect.o bootsect.s
+ld -m elf_i386 -Ttext 0 -o bootsect bootsect.o
+objcopy -R .pdr -R .comment -R.note -S -O binary bootsect
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/boot'
+make setup -C boot
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/boot'
+as --32 -g -o setup.o setup.s
+ld -m elf_i386 -Ttext 0 -o setup setup.o
+objcopy -R .pdr -R .comment -R.note -S -O binary setup
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/boot'
+make head.o -C boot/
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/boot'
+as --32 -g -o head.o head.s
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/boot'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer   -Iinclude -fcf-protection=none -mmanual-endbr -c -o init/main.o init/main.c
+make -C kernel
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/kernel'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o sched.o sched.c
+as --32 -g -o system_call.o system_call.s
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o traps.o traps.c
+as --32 -g -o asm.o asm.s
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o fork.o fork.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o panic.o panic.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o printk.o printk.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o vsprintf.o vsprintf.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o sys.o sys.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o exit.o exit.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o signal.o signal.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o mktime.o mktime.c
+ld -m elf_i386 -r -o kernel.o sched.o system_call.o traps.o asm.o fork.o panic.o printk.o vsprintf.o sys.o exit.o signal.o mktime.o
+sync
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/kernel'
+make -C mm
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/mm'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o memory.o memory.c
+as --32 -g -o page.o page.s
+ld -m elf_i386 -r -o mm.o memory.o page.o
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/mm'
+make -C fs
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/fs'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o open.o open.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o read_write.o read_write.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o inode.o inode.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o file_table.o file_table.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o buffer.o buffer.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o super.o super.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o block_dev.o block_dev.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o char_dev.o char_dev.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o file_dev.o file_dev.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o stat.o stat.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o exec.o exec.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o pipe.o pipe.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o namei.o namei.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o bitmap.o bitmap.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o fcntl.o fcntl.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o ioctl.o ioctl.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o truncate.o truncate.c
+ld -m elf_i386 -r -o fs.o open.o read_write.o inode.o file_table.o buffer.o super.o block_dev.o char_dev.o file_dev.o stat.o exec.o pipe.o namei.o bitmap.o fcntl.o ioctl.o truncate.o
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/fs'
+make -C kernel/blk_drv
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/kernel/blk_drv'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o ll_rw_blk.o ll_rw_blk.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o floppy.o floppy.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o hd.o hd.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o ramdisk.o ramdisk.c
+ar rcs blk_drv.a ll_rw_blk.o floppy.o hd.o ramdisk.o
+sync
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/kernel/blk_drv'
+make -C kernel/chr_drv
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/kernel/chr_drv'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o tty_io.o tty_io.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o console.o console.c
+cpp -nostdinc -I../../include keyboard.S -o keyboard.s
+as --32 -g -o keyboard.o keyboard.s
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o serial.o serial.c
+as --32 -g -o rs_io.o rs_io.s
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o tty_ioctl.o tty_ioctl.c
+ar rcs chr_drv.a tty_io.o console.o keyboard.o serial.o rs_io.o tty_ioctl.o
+sync
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/kernel/chr_drv'
+make -C kernel/math
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/kernel/math'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../../include \
+-c -o math_emulate.o math_emulate.c
+ar rcs math.a math_emulate.o
+sync
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/kernel/math'
+make -C lib
+make[1]: Entering directory '/home/hjj/gitSource/linux0.11/lib'
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o ctype.o ctype.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o _exit.o _exit.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o open.o open.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o close.o close.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o errno.o errno.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o write.o write.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o dup.o dup.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o setsid.o setsid.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o execve.o execve.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o wait.o wait.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o string.o string.c
+gcc -g3 -m32 -fno-builtin -fno-stack-protector -fomit-frame-pointer  -I../include \
+-c -o malloc.o malloc.c
+ar rcs lib.a ctype.o _exit.o open.o close.o errno.o write.o dup.o setsid.o execve.o wait.o string.o malloc.o
+sync
+make[1]: Leaving directory '/home/hjj/gitSource/linux0.11/lib'
+ld -m elf_i386 -Ttext 0 -e startup_32 boot/head.o init/main.o \
+kernel/kernel.o mm/mm.o fs/fs.o \
+kernel/blk_drv/blk_drv.a kernel/chr_drv/chr_drv.a \
+kernel/math/math.a \
+lib/lib.a \
+-o tools/system 
+nm tools/system | grep -v '\(compiled\)\|\(\.o$\)\|\( [aU] \)\|\(\.\.ng$\)\|\(LASH[RL]DI\)'| sort > System.map 
+cp -f tools/system system.tmp
+strip system.tmp
+objcopy -O binary -R .note -R .comment system.tmp tools/kernel
+tools/build.sh boot/bootsect boot/setup tools/kernel Image 
+记录了1+0 的读入
+记录了1+0 的写出
+512 bytes copied, 9.1936e-05 s, 5.6 MB/s
+记录了0+1 的读入
+记录了0+1 的写出
+311 bytes copied, 7.2291e-05 s, 4.3 MB/s
+记录了309+1 的读入
+记录了309+1 的写出
+158465 bytes (158 kB, 155 KiB) copied, 0.000516652 s, 307 MB/s
+记录了2+0 的读入
+记录了2+0 的写出
+2 bytes copied, 2.278e-05 s, 87.8 kB/s
+rm system.tmp
+rm tools/kernel -f
+sync
