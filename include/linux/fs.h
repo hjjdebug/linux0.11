@@ -87,7 +87,10 @@ struct d_inode {		// disk inode
 	unsigned long i_time;
 	unsigned char i_gid;
 	unsigned char i_nlinks;
-	unsigned short i_zone[9];
+	//前7个是直接块号寻址,第8个是一级间接寻址,第9个是2级间接寻址
+	//所谓1级间接寻址,是第一次拿到的块,其储存的全部是块号数据,由此再拿到文件数据
+	//所谓2级间接寻址,可以递推知.
+	unsigned short i_zone[9]; 
 };
 
 struct m_inode {   //memory inode
@@ -194,7 +197,7 @@ extern void free_block(int dev, int block);
 extern struct m_inode * new_inode(int dev);
 extern void free_inode(struct m_inode * inode);
 extern int sync_dev(int dev);
-extern struct super_block * get_super(int dev);
+extern struct super_block * check_in_superb(int dev);
 extern int ROOT_DEV;
 
 extern void mount_root(void);

@@ -53,7 +53,8 @@ static void wait_on_super_unlock(struct super_block * sb)
 	sti();
 }
 //获取super_block *
-struct super_block * get_super(int dev)
+//如果8个super 中有该dev 的super, 返回指针,否则返回为NULL
+struct super_block * check_in_superb(int dev)
 {
 	struct super_block * s;
 
@@ -81,7 +82,7 @@ void release_super(int dev) //change put_super 为release_super
 		printk("root diskette changed: prepare for armageddon\n\r");
 		return;
 	}
-	if (!(sb = get_super(dev)))
+	if (!(sb = check_in_superb(dev)))
 		return;
 	if (sb->s_inode_mount) {		//还有引用就卸载，显示警告
 		printk("Mounted disk changed - tssk, tssk\n\r");
@@ -89,10 +90,10 @@ void release_super(int dev) //change put_super 为release_super
 	}
 	lock_super(sb);
 	sb->s_dev = 0;
-	for(i=0;i<I_MAP_SLOTS;i++)
+	for(i=0;i<I_MAP_SLOTS;i++) //把8个imap 缓存块释放掉
 		brelse(sb->s_imap[i]);
 	for(i=0;i<Z_MAP_SLOTS;i++)
-		brelse(sb->s_zmap[i]);
+		brelse(sb->s_zmap[i]);//把8个zmap 缓存块释放掉
 	unlock_super(sb);
 	return;
 }
@@ -106,13 +107,13 @@ static struct super_block * read_super(int dev)
 	if (!dev)
 		return NULL;
 	check_disk_change(dev);
-	if ((s = get_super(dev)))
+	if ((s = check_in_superb(dev))) //取到了 super_block* 返回指针
 		return s;
-	for (s = 0+super_block ;; s++) {
+	for (s = 0+super_block ;; s++) { //如果无空闲超级块,返回空
 		if (s >= NR_SUPER+super_block)
 			return NULL;
 		if (!s->s_dev)
-			break;
+			break; //找到了空闲超级块,就用它
 	}
 	s->s_dev = dev;
 	s->s_inode_super = NULL;
@@ -121,15 +122,15 @@ static struct super_block * read_super(int dev)
 	s->s_rd_only = 0;
 	s->s_dirt = 0;
 	lock_super(s);
-	if (!(bh = bread(dev,1))) {
+	if (!(bh = bread(dev,1))) { //磁盘上第1个块号是超级块, (第0个是引导块)
 		s->s_dev=0;
 		unlock_super(s);
 		return NULL;
 	}
 	*((struct d_super_block *) s) =
-		*((struct d_super_block *) bh->b_data);
+		*((struct d_super_block *) bh->b_data); //读取的数据存入结构变量s
 	brelse(bh);
-	if (s->s_magic != SUPER_MAGIC) {
+	if (s->s_magic != SUPER_MAGIC) { //对读取的数据分析
 		s->s_dev = 0;
 		unlock_super(s);
 		return NULL;
@@ -141,16 +142,16 @@ static struct super_block * read_super(int dev)
 	block=2;// 第0块为boot块，第1块为super块,第2块为inode map 块，1块（1024byte)
 	for (i=0 ; i < s->s_imap_blocks ; i++)
 		if ((s->s_imap[i]=bread(dev,block))) //bread 返回的是buffer_header*
-			block++;
+			block++; //把inode_map 全部读入内存,最大8块
 		else
 			break;
 	for (i=0 ; i < s->s_zmap_blocks ; i++)
 		if ((s->s_zmap[i]=bread(dev,block)))
-			block++;
+			block++; //把zone_map 全部读入内存,最大8块
 		else
 			break;
 	if (block != 2+s->s_imap_blocks+s->s_zmap_blocks) {
-		for(i=0;i<I_MAP_SLOTS;i++)
+		for(i=0;i<I_MAP_SLOTS;i++) //合法性判别,不合法全部释放
 			brelse(s->s_imap[i]);
 		for(i=0;i<Z_MAP_SLOTS;i++)
 			brelse(s->s_zmap[i]);
@@ -180,15 +181,15 @@ int sys_umount(char * dev_name)
 	iput(inode);
 	if (dev==ROOT_DEV)
 		return -EBUSY;
-	if (!(sb=get_super(dev)) || !(sb->s_inode_mount))
+	if (!(sb=check_in_superb(dev)) || !(sb->s_inode_mount))
 		return -ENOENT;
 	if (!sb->s_inode_mount->i_mount)
 		printk("Mounted inode has i_mount=0\n");
 	for (inode=inode_table+0 ; inode<inode_table+NR_INODE ; inode++)
 		if (inode->i_dev==dev && inode->i_count)
 				return -EBUSY;
-	sb->s_inode_mount->i_mount=0;
-	iput(sb->s_inode_mount);
+	sb->s_inode_mount->i_mount=0; //super 有2个内存inode, 一个inode_mount,一个inode_super, 它们都指向根inode
+	iput(sb->s_inode_mount); //主要是对inode->icount--并相应处理
 	sb->s_inode_mount = NULL;
 	iput(sb->s_inode_super);
 	sb->s_inode_super = NULL;
@@ -239,16 +240,17 @@ int sys_mount(char * dev_name, char * dir_name, int rw_flag)
 	return 0;			/* we do that in umount */
 }
 
+//需要读取到设备上的super_block 和 ROOT inode,这就叫mount_root,表示根可用了
 void mount_root(void)
 {
 	int i,free;
 	struct super_block * p;
 	struct m_inode * mi;
 
-	if (32 != sizeof (struct d_inode))
+	if (32 != sizeof (struct d_inode)) //合法性检查
 		panic("bad i-node size");
 	for(i=0;i<NR_FILE;i++)
-		file_table[i].f_count=0;
+		file_table[i].f_count=0; //初始化file_table(64个)
 	if (MAJOR(ROOT_DEV) == 2) {
 		printk("Insert root floppy and press ENTER");
 		wait_for_keypress();
@@ -256,25 +258,25 @@ void mount_root(void)
 	for(p = &super_block[0] ; p < &super_block[NR_SUPER] ; p++) {
 		p->s_dev = 0;
 		p->s_lock = 0;
-		p->s_wait = NULL;
+		p->s_wait = NULL; //初始化超级块结构(8个),实际用一个就够了.
 	}
-	if (!(p=read_super(ROOT_DEV)))
+	if (!(p=read_super(ROOT_DEV))) //从设备上要能读到超级块
 		panic("Unable to mount root");
-	if (!(mi=iget(ROOT_DEV,ROOT_INO)))
+	if (!(mi=iget(ROOT_DEV,ROOT_INO))) //从设备上要能读到根INODE
 		panic("Unable to read root i-node");
 	mi->i_count += 3 ;	/* NOTE! it is logically used 4 times, not 1 */
 	p->s_inode_super = p->s_inode_mount = mi;
-	current->pwd = mi;
+	current->pwd = mi; //该inode 作为当前工作目录和根目录
 	current->root = mi;
 	free=0;
-	i=p->s_nzones;
-	while (-- i >= 0)
+	i=p->s_nzones; //得到块个数
+	while (-- i >= 0) //计算空block个数, bh为1k字节,8kbits
 		if (!test_bit(i&8191,p->s_zmap[i>>13]->b_data))
 			free++;
 	printk("%d/%d free blocks\n\r",free,p->s_nzones);
 	free=0;
-	i=p->s_ninodes+1;
-	while (-- i >= 0)
+	i=p->s_ninodes+1; //得到inode 个数
+	while (-- i >= 0) //计算空闲的inode 个数
 		if (!test_bit(i&8191,p->s_imap[i>>13]->b_data))
 			free++;
 	printk("%d/%d free inodes\n\r",free,p->s_ninodes);

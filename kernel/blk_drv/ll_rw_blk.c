@@ -61,6 +61,7 @@ static inline void unlock_buffer(struct buffer_head * bh)
  * It disables interrupts so that it can muck with the
  * request-lists in peace.
  */
+//直接执行request 或者插入到链表
 static void add_request(struct blk_dev_struct * dev, struct blk_request * req)
 {
 	struct blk_request * tmp;
@@ -69,7 +70,7 @@ static void add_request(struct blk_dev_struct * dev, struct blk_request * req)
 	cli();
 	if (req->bh)
 		req->bh->b_dirt = 0;
-	if (!(tmp = dev->current_request)) {
+	if (!(tmp = dev->current_request)) {//当当前的设备请求为空时,立即执行
 		dev->current_request = req;
 		sti();
 		(dev->request_fn)();
@@ -78,9 +79,9 @@ static void add_request(struct blk_dev_struct * dev, struct blk_request * req)
 	for ( ; tmp->next ; tmp=tmp->next)
 		if ((IN_ORDER(tmp,req) || 
 		    !IN_ORDER(tmp,tmp->next)) &&
-		    IN_ORDER(req,tmp->next))
+		    IN_ORDER(req,tmp->next)) //查找链表的插入位置,IN_ORDER是电梯算法
 			break;
-	req->next=tmp->next;
+	req->next=tmp->next; // 把req 插入到tmp 之后
 	tmp->next=req;
 	sti();
 }
@@ -113,7 +114,7 @@ repeat:
  * of the requests are only for reads.
  */
 	if (rw == READ)
-		req = request+NR_REQUEST;
+		req = request+NR_REQUEST; //NR_REQUEST 有32个
 	else
 		req = request+((NR_REQUEST*2)/3);
 /* find an empty request */
@@ -123,7 +124,7 @@ repeat:
 /* if none found, sleep on new requests: check for rw_ahead */
 	if (req < request) {
 		if (rw_ahead) {
-			unlock_buffer(bh);
+			unlock_buffer(bh); //如果是预读,没请求空间就返回,否则,等待.
 			return;
 		}
 		sleep_on(&wait_for_request);
@@ -139,7 +140,7 @@ repeat:
 	req->waiting = NULL;
 	req->bh = bh;
 	req->next = NULL;
-	add_request(major+blk_dev,req);
+	add_request(major+blk_dev,req); //添加一个request
 }
 
 void ll_rw_block(int rw, struct buffer_head * bh)
@@ -147,18 +148,18 @@ void ll_rw_block(int rw, struct buffer_head * bh)
 	unsigned int major;
 
 	if ((major=MAJOR(bh->b_dev)) >= NR_BLK_DEV ||
-	!(blk_dev[major].request_fn)) {
+		!(blk_dev[major].request_fn)) { //合法性判别
 		printk("Trying to read nonexistent block-device\n\r");
 		return;
 	}
-	make_request(major,rw,bh);
+	make_request(major,rw,bh); //向设备发送请求
 }
 
 void blk_dev_init(void)
 {
 	int i;
 
-	for (i=0 ; i<NR_REQUEST ; i++) {
+	for (i=0 ; i<NR_REQUEST ; i++) { // request 最大32
 		request[i].dev = -1;
 		request[i].next = NULL;
 	}

@@ -139,16 +139,16 @@ void floppy_deselect(unsigned int nr)
 int floppy_change(unsigned int nr)
 {
 repeat:
-	floppy_on(nr);
-	while ((current_DOR & 3) != nr && selected)
+	floppy_on(nr); //打开磁盘
+	while ((current_DOR & 3) != nr && selected) //数字输出寄存器
 		interruptible_sleep_on(&wait_on_floppy_select);
 	if ((current_DOR & 3) != nr)
 		goto repeat;
-	if (inb(FD_DIR) & 0x80) {
+	if (inb(FD_DIR) & 0x80) { //读寄存器判定是否改变
 		floppy_off(nr);
 		return 1;
 	}
-	floppy_off(nr);
+	floppy_off(nr);//关闭磁盘
 	return 0;
 }
 

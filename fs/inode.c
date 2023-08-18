@@ -40,7 +40,7 @@ static inline void unlock_inode(struct m_inode * inode)
 	wake_up_last(&inode->i_wait);
 }
 
-void invalidate_inodes(int dev)
+void invalidate_inodes(int dev) //释放掉所有该设备的inode, inode数最大32个NR_INODE=32
 {
 	int i;
 	struct m_inode * inode;
@@ -148,7 +148,7 @@ int create_diskBlock(struct m_inode * inode, int block_seq) //修改create_block
 {
 	return _bmap(inode,block_seq,1);
 }
-		
+//主要功能时inode->i_count--, 并做关联处理		
 void iput(struct m_inode * inode)
 {
 	if (!inode)
@@ -156,7 +156,7 @@ void iput(struct m_inode * inode)
 	wait_on_inode_unlock(inode);
 	if (!inode->i_count)
 		panic("iput: trying to free free inode");
-	if (inode->i_pipe) {
+	if (inode->i_pipe) { //当inode 是管道时
 		wake_up_last(&inode->i_wait);
 		if (--inode->i_count)
 			return;
@@ -175,21 +175,21 @@ void iput(struct m_inode * inode)
 		wait_on_inode_unlock(inode);
 	}
 repeat:
-	if (inode->i_count>1) {
-		inode->i_count--;
+	if (inode->i_count>1) { 
+		inode->i_count--;//还有引用,则返回
 		return;
 	}
-	if (!inode->i_nlinks) {
+	if (!inode->i_nlinks) { //没有任何连接,则销毁.
 		truncate(inode);
 		free_inode(inode);
 		return;
 	}
-	if (inode->i_dirt) {
+	if (inode->i_dirt) { // dirt 要同步
 		write_inode(inode);	/* we can sleep - so do again */
 		wait_on_inode_unlock(inode);
 		goto repeat;
 	}
-	inode->i_count--;
+	inode->i_count--; //有可能减到0
 	return;
 }
 //inode_table表一共才有32个INODE, 要拿到一个空的inode
@@ -203,14 +203,14 @@ struct m_inode * get_empty_inode(void)
 		inode = NULL;
 		for (i = NR_INODE; i ; i--) {
 			if (++last_inode >= inode_table + NR_INODE)
-				last_inode = inode_table;
-			if (!last_inode->i_count) {
+				last_inode = inode_table; //环形操作
+			if (!last_inode->i_count) { //如果该inode 未被使用,找到,退出.
 				inode = last_inode;
 				if (!inode->i_dirt && !inode->i_lock)
 					break;
 			}
 		}
-		if (!inode) {
+		if (!inode) { //出错提示,死机
 			for (i=0 ; i<NR_INODE ; i++)
 				printk("%04x: %6d\t",inode_table[i].i_dev,
 					inode_table[i].i_num);
@@ -242,16 +242,17 @@ struct m_inode * get_pipe_inode(void)
 	inode->i_pipe = 1;
 	return inode;
 }
-//获取m_inode *, 输入dev 和 node number,节点号是节点区域编号，从1开始
+//输入dev 和 node number,节点号从1开始, 返回i_node
 struct m_inode * iget(int dev,int nr)
 {
 	struct m_inode * inode, * empty;
 
 	if (!dev)
 		panic("iget with dev==0");
-	empty = get_empty_inode();
+	empty = get_empty_inode(); //获取一个空inode
 	inode = inode_table;
-	while (inode < NR_INODE+inode_table) {	// 查询inode 是否已经在inode_table表中
+	// 查询inode_table表,看看inode是否被超级块mount
+	while (inode < NR_INODE+inode_table) {	
 		if (inode->i_dev != dev || inode->i_num != nr) {
 			inode++;
 			continue;
@@ -261,12 +262,12 @@ struct m_inode * iget(int dev,int nr)
 			inode = inode_table;
 			continue;
 		}
-		inode->i_count++;
-		if (inode->i_mount) {
+		inode->i_count++; //表明该inode在使用
+		if (inode->i_mount) { //如果该inode被mount过
 			int i;
 
 			for (i = 0 ; i<NR_SUPER ; i++)
-				if (super_block[i].s_inode_mount==inode)
+				if (super_block[i].s_inode_mount==inode) //查找是那个super_block
 					break;
 			if (i >= NR_SUPER) {
 				printk("Mounted inode hasn't got sb\n");
@@ -274,8 +275,8 @@ struct m_inode * iget(int dev,int nr)
 					iput(empty);
 				return inode;
 			}
-			iput(inode);
-			dev = super_block[i].s_dev;
+			iput(inode); //把该inode 放回
+			dev = super_block[i].s_dev; //该dev 未该super_block dev
 			nr = ROOT_INO;
 			inode = inode_table;
 			continue;
@@ -293,7 +294,7 @@ struct m_inode * iget(int dev,int nr)
 	return inode;
 }
 //从磁盘读取inode 数据.
-//根据inode的dev和inr, 计算出blocknr,读磁盘读取该blocknr,覆盖传入的指针结构inode,从而更新了inode数据
+//根据inode的dev和inr, 计算出blocknr,读取该blocknr,从而更新了inode磁盘部分数据
 static void read_inode(struct m_inode * inode)
 {
 	struct super_block * sb;
@@ -301,7 +302,7 @@ static void read_inode(struct m_inode * inode)
 	int block;
 
 	lock_inode(inode);
-	if (!(sb=get_super(inode->i_dev)))
+	if (!(sb=check_in_superb(inode->i_dev)))
 		panic("trying to read inode without dev");
 	block = 2 + sb->s_imap_blocks + sb->s_zmap_blocks +		//2 为一个启动块，一个超级块,后面是imap+zmap,再后面是inode 块!
 		(inode->i_num-1)/INODES_PER_BLOCK;
@@ -325,7 +326,7 @@ static void write_inode(struct m_inode * inode)
 		unlock_inode(inode);
 		return;
 	}
-	if (!(sb=get_super(inode->i_dev)))
+	if (!(sb=check_in_superb(inode->i_dev)))
 		panic("trying to write inode without device");
 	block = 2 + sb->s_imap_blocks + sb->s_zmap_blocks +		//启动块+超级块占了2块,i节点位图块，逻辑位图块, i节点号-1
 		(inode->i_num-1)/INODES_PER_BLOCK;
@@ -336,6 +337,7 @@ static void write_inode(struct m_inode * inode)
 			*(struct d_inode *)inode;
 	bh->b_dirt=1;											// 缓冲区与磁盘不一致，故置1, 该缓冲块会被写回磁盘
 	inode->i_dirt=0;										// i节点已与缓冲区一致，故清0
-	brelse(bh);
+	//为什么要release ? bh->b_dirt=1 怎么办? 做请求时或读该node或刷新时会同步到磁盘
+	brelse(bh); 
 	unlock_inode(inode);
 }

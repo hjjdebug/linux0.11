@@ -134,7 +134,11 @@ int sys_chown(const char * filename,int uid,int gid)
 	iput(inode);
 	return 0;
 }
-
+/*
+打开一个文件,返回文件描述符是什么意思?
+文件描述符fd是一个整数,在current->filep[fd] 数组中存放着文件指针 struct file *
+目前filep[]数组容量是20, 而文件的容量是64
+*/
 int sys_open(const char * filename,int flag,int mode)
 {
 	struct m_inode * inode;
@@ -142,25 +146,27 @@ int sys_open(const char * filename,int flag,int mode)
 	int i,fd;
 
 	mode &= 0777 & ~current->umask;
-	for(fd=0 ; fd<NR_OPEN ; fd++)
+	for(fd=0 ; fd<NR_OPEN ; fd++) //最大打开的文件数20
 		if (!current->filp[fd])
 			break;
 	if (fd>=NR_OPEN)			//每个进程可以同时打开20个fd
 		return -EINVAL;
-	current->close_on_exec &= ~(1<<fd);
+	current->close_on_exec &= ~(1<<fd); //把对应位置0
 	f=0+file_table;
-	for (i=0 ; i<NR_FILE ; i++,f++) //文件最多64个
+	for (i=0 ; i<NR_FILE ; i++,f++) //文件表最多64个
 		if (!f->f_count) break;
 	if (i>=NR_FILE)
 		return -EINVAL;
+	//把f保存到current->filep[fd]中,且使用数加1
 	(current->filp[fd]=f)->f_count++;
+	//由文件名称而打开inode
 	if ((i=open_namei(filename,flag,mode,&inode))<0) {
-		current->filp[fd]=NULL;
+		current->filp[fd]=NULL;//未打开inode, 指针设为空
 		f->f_count=0;
 		return i;
 	}
 /* ttys are somewhat special (ttyxx major==4, tty major==5) */
-	if (S_ISCHR(inode->i_mode)) {
+	if (S_ISCHR(inode->i_mode)) { //是字符设备
 		if (MAJOR(inode->i_zone[0])==4) {
 			if (current->leader && current->tty<0) {
 				current->tty = MINOR(inode->i_zone[0]);
@@ -176,8 +182,8 @@ int sys_open(const char * filename,int flag,int mode)
 	}
 /* Likewise with block-devices: check for floppy_change */
 	if (S_ISBLK(inode->i_mode))
-		check_disk_change(inode->i_zone[0]);
-	f->f_mode = inode->i_mode;
+		check_disk_change(inode->i_zone[0]); //zone[0]存放了设备号
+	f->f_mode = inode->i_mode; // 保存mode,flag,count,inode 到文件指针
 	f->f_flags = flag;
 	f->f_count = 1;
 	f->f_inode = inode;

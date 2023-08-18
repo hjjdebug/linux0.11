@@ -49,7 +49,7 @@ void free_block(int dev, int block)
 	struct super_block * sb;
 	struct buffer_head * bh;
 
-	if (!(sb = get_super(dev)))
+	if (!(sb = check_in_superb(dev)))
 		panic("trying to free block on nonexistent device");
 	if (block < sb->s_firstdatazone || block >= sb->s_nzones)
 		panic("trying to free block not in datazone");
@@ -78,7 +78,7 @@ int new_block(int dev)
 	struct super_block * sb;
 	int i,j;
 
-	if (!(sb = get_super(dev)))
+	if (!(sb = check_in_superb(dev)))
 		panic("trying to get new block from nonexistant device");
 	j = 8192;
 	for (i=0 ; i<8 ; i++)
@@ -103,7 +103,7 @@ int new_block(int dev)
 	brelse(bh);
 	return j;
 }
-
+// 把super块中inode 对应bit 位清0,并置super_imap[i] 为dirt
 void free_inode(struct m_inode * inode)
 {
 	struct super_block * sb;
@@ -121,7 +121,7 @@ void free_inode(struct m_inode * inode)
 	}
 	if (inode->i_nlinks)
 		panic("trying to free inode with links");
-	if (!(sb = get_super(inode->i_dev)))
+	if (!(sb = check_in_superb(inode->i_dev)))
 		panic("trying to free inode on nonexistent device");
 	if (inode->i_num < 1 || inode->i_num > sb->s_ninodes)
 		panic("trying to free inode 0 or nonexistant inode");
@@ -142,7 +142,7 @@ struct m_inode * new_inode(int dev)
 
 	if (!(inode=get_empty_inode()))
 		return NULL;
-	if (!(sb = get_super(dev)))
+	if (!(sb = check_in_superb(dev)))
 		panic("new_inode with unknown device");
 	j = 8192;
 	for (i=0 ; i<8 ; i++)

@@ -37,6 +37,7 @@ struct blk_request {
  * reads always go before writes. This is natural: reads
  * are much more time-critical than writes.
  */
+//返回真或假
 #define IN_ORDER(s1,s2) \
 ((s1)->cmd<(s2)->cmd || ((s1)->cmd==(s2)->cmd && \
 ((s1)->dev < (s2)->dev || ((s1)->dev == (s2)->dev && \
@@ -108,20 +109,20 @@ static inline void unlock_buffer(struct buffer_head * bh)
 
 static inline void end_request(int uptodate)
 {
-	DEVICE_OFF(CURRENT->dev);
+	DEVICE_OFF(CURRENT->dev); //关闭设备,硬盘为空操作
 	if (CURRENT->bh) {
-		CURRENT->bh->b_uptodate = uptodate;
-		unlock_buffer(CURRENT->bh);
+		CURRENT->bh->b_uptodate = uptodate; //设置状态
+		unlock_buffer(CURRENT->bh); //释放缓冲块
 	}
 	if (!uptodate) {
 		printk(DEVICE_NAME " I/O error\n\r");
 		printk("dev %04x, block %d\n\r",CURRENT->dev,
 			CURRENT->bh->b_blocknr);
 	}
-	wake_up_last(&CURRENT->waiting);
-	wake_up_last(&wait_for_request);
+	wake_up_last(&CURRENT->waiting); //唤醒等待的进程,
+	wake_up_last(&wait_for_request); //唤醒等待请求的进程
 	CURRENT->dev = -1;
-	CURRENT = CURRENT->next;
+	CURRENT = CURRENT->next; //更新下一个请求为当前请求
 }
 
 #define INIT_REQUEST \
