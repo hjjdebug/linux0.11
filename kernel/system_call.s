@@ -186,7 +186,7 @@ timer_interrupt:
 	mov %ax,%es
 	movl $0x17,%eax
 	mov %ax,%fs
-	incl jiffies
+	incl jiffies    # timer 每秒中断100次, 它构成了运行时钟.
 	movb $0x20,%al		# EOI to interrupt controller #1
 	outb %al,$0x20
 	movl CS(%esp),%eax

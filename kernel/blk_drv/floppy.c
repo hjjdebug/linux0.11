@@ -136,6 +136,7 @@ void floppy_deselect(unsigned int nr)
  * to the desired drive, but it will probably not survive the sleep if
  * several floppies are used at the same time: thus the loop.
  */
+//nr 是磁盘子设备号,只能是0,1,2,3
 int floppy_change(unsigned int nr)
 {
 repeat:

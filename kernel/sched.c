@@ -58,7 +58,7 @@ union task_union {
 static union task_union init_task = {INIT_TASK,};
 
 long volatile jiffies=0;
-long startup_time=0;
+long startup_time=0; //初始化时,用cmos读取的年月日时间转换成秒值得到
 struct task_struct *current = &(init_task.task);
 struct task_struct *last_task_used_math = NULL;
 
@@ -110,7 +110,7 @@ void schedule(void)
 
 	for(p = &LAST_TASK ; p > &FIRST_TASK ; --p)
 		if (*p) {
-			if ((*p)->alarm && (*p)->alarm < jiffies) {
+			if ((*p)->alarm && (*p)->alarm < jiffies) { //(*p->alarm 存储的时报警滴答数)
 					(*p)->signal |= (1<<(SIGALRM-1));
 					(*p)->alarm = 0;
 				}

@@ -68,9 +68,10 @@ void sync_inodes(void)
 			write_inode(inode);
 	}
 }
-//descpription: block map, 数据块映射到磁盘块处理程序
 // input: inode(i节点指针）, block_seq(数据块顺序号）,create(bool)
 // return:  盘块号（磁盘上的逻辑块号）
+// descpription: block map, 数据块映射到磁盘块处理程序
+// _bmap 是块映射的意思
 static int _bmap(struct m_inode * inode,int block_seq,int create)
 {
 	struct buffer_head * bh;
@@ -89,17 +90,17 @@ static int _bmap(struct m_inode * inode,int block_seq,int create)
 		return inode->i_zone[block_seq];
 	}
 	block_seq -= 7;
-	if (block_seq<512) { // 块号在7-512之间为一级间接寻址
+	if (block_seq<512) { // 块号在7-512+7之间为一级间接寻址
 		if (create && !inode->i_zone[7])
 			if ((inode->i_zone[7]=new_block(inode->i_dev))) {
 				inode->i_dirt=1;
 				inode->i_ctime=CURRENT_TIME;
 			}
-		if (!inode->i_zone[7])
+		if (!inode->i_zone[7]) //i_zone[7]存放了一页,上面是顺序号到块号的映射
 			return 0;
-		if (!(bh = bread(inode->i_dev,inode->i_zone[7])))
+		if (!(bh = bread(inode->i_dev,inode->i_zone[7]))) //先读这页内容
 			return 0;
-		i = ((unsigned short *) (bh->b_data))[block_seq];
+		i = ((unsigned short *) (bh->b_data))[block_seq];//1个块号占2bytes,可存512个块号
 		if (create && !i)
 			if ((i=new_block(inode->i_dev))) {
 				((unsigned short *) (bh->b_data))[block_seq]=i;
@@ -108,17 +109,17 @@ static int _bmap(struct m_inode * inode,int block_seq,int create)
 		brelse(bh);
 		return i;
 	}
-	block_seq -= 512; //块号>512为2级寻址
+	block_seq -= 512; //块号>512+7为2级寻址
 	if (create && !inode->i_zone[8])
 		if ((inode->i_zone[8]=new_block(inode->i_dev))) {
 			inode->i_dirt=1;
 			inode->i_ctime=CURRENT_TIME;
 		}
-	if (!inode->i_zone[8])
+	if (!inode->i_zone[8])//该页是2级索引
 		return 0;
-	if (!(bh=bread(inode->i_dev,inode->i_zone[8])))
+	if (!(bh=bread(inode->i_dev,inode->i_zone[8]))) //先把该页内容读出来
 		return 0;
-	i = ((unsigned short *)bh->b_data)[block_seq>>9];
+	i = ((unsigned short *)bh->b_data)[block_seq>>9]; //数序号>>9先找到页地址
 	if (create && !i)
 		if ((i=new_block(inode->i_dev))) {
 			((unsigned short *) (bh->b_data))[block_seq>>9]=i;
@@ -127,9 +128,9 @@ static int _bmap(struct m_inode * inode,int block_seq,int create)
 	brelse(bh);
 	if (!i)
 		return 0;
-	if (!(bh=bread(inode->i_dev,i)))
+	if (!(bh=bread(inode->i_dev,i))) //把该页内容再取出来
 		return 0;
-	i = ((unsigned short *)bh->b_data)[block_seq&511];
+	i = ((unsigned short *)bh->b_data)[block_seq&511]; //页号与511的余数找到对应的块号
 	if (create && !i)
 		if ((i=new_block(inode->i_dev))) {
 			((unsigned short *) (bh->b_data))[block_seq&511]=i;
@@ -251,7 +252,7 @@ struct m_inode * iget(int dev,int nr)
 		panic("iget with dev==0");
 	empty = get_empty_inode(); //获取一个空inode
 	inode = inode_table;
-	// 查询inode_table表,看看inode是否被超级块mount
+	// 查询inode_table表,看看inode是否被超级块mount,32个inode
 	while (inode < NR_INODE+inode_table) {	
 		if (inode->i_dev != dev || inode->i_num != nr) {
 			inode++;
@@ -290,7 +291,7 @@ struct m_inode * iget(int dev,int nr)
 	inode=empty;
 	inode->i_dev = dev;
 	inode->i_num = nr;
-	read_inode(inode);
+	read_inode(inode); //把这个inode 从磁盘中读进来(根据inore->i_num)
 	return inode;
 }
 //从磁盘读取inode 数据.
@@ -305,11 +306,11 @@ static void read_inode(struct m_inode * inode)
 	if (!(sb=check_in_superb(inode->i_dev)))
 		panic("trying to read inode without dev");
 	block = 2 + sb->s_imap_blocks + sb->s_zmap_blocks +		//2 为一个启动块，一个超级块,后面是imap+zmap,再后面是inode 块!
-		(inode->i_num-1)/INODES_PER_BLOCK;
+		(inode->i_num-1)/INODES_PER_BLOCK;  //由inode_nr号就能计算出磁盘块号
 	if (!(bh=bread(inode->i_dev,block)))			//找到磁盘块,读磁盘
 		panic("unable to read i-node block");
 	*(struct d_inode *)inode =
-		((struct d_inode *)bh->b_data)
+		((struct d_inode *)bh->b_data) //由于一个磁盘块包含32个inode,所以再计算出准确位置,取出磁盘inode
 			[(inode->i_num-1)%INODES_PER_BLOCK];	//找到对应的项
 	brelse(bh);
 	unlock_inode(inode);
@@ -337,7 +338,7 @@ static void write_inode(struct m_inode * inode)
 			*(struct d_inode *)inode;
 	bh->b_dirt=1;											// 缓冲区与磁盘不一致，故置1, 该缓冲块会被写回磁盘
 	inode->i_dirt=0;										// i节点已与缓冲区一致，故清0
-	//为什么要release ? bh->b_dirt=1 怎么办? 做请求时或读该node或刷新时会同步到磁盘
+	//为什么要release?,只是把bh-count-1, bh->b_dirt=1 怎么办? 做请求时或读该node或刷新时会同步到磁盘
 	brelse(bh); 
 	unlock_inode(inode);
 }

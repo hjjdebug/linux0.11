@@ -264,7 +264,7 @@ static void read_intr(void)
 		return;
 	}
 	end_request(1); //数据已读完,正常结束请求
-	do_hd_request(); //做硬盘请求?
+	do_hd_request(); //做硬盘请求? 处理下一请求
 }
 
 static void write_intr(void)

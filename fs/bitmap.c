@@ -72,6 +72,7 @@ void free_block(int dev, int block)
 	sb->s_zmap[block/8192]->b_dirt = 1;
 }
 
+//返回磁盘块号
 int new_block(int dev)
 {
 	struct buffer_head * bh;
@@ -93,7 +94,7 @@ int new_block(int dev)
 	j += i*8192 + sb->s_firstdatazone-1;
 	if (j >= sb->s_nzones)
 		return 0;
-	if (!(bh=getblk(dev,j)))
+	if (!(bh=getblk(dev,j))) //获取dev,block 对应的一个缓冲块
 		panic("new_block: cannot get block");
 	if (bh->b_count != 1)
 		panic("new block: count is != 1");

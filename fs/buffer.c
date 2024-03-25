@@ -121,11 +121,12 @@ void check_disk_change(int dev)
 		return;
 	if (!floppy_change(dev & 0x03)) //最多4个软盘，盘无变化返回
 		return;
-	for (i=0 ; i<NR_SUPER ; i++)
+	for (i=0 ; i<NR_SUPER ; i++)  //当软盘已经更换时,该设备信息都要消除.
 		if (super_block[i].s_dev == dev) //超级块是该设备
 			release_super(super_block[i].s_dev); //释放超级块
-	invalidate_inodes(dev); //释放掉所有该设备的inode， inode数最大32个NR_INODE=32
-	invalidate_buffers(dev); //释放掉所有该设备的buffer, 缓冲块个数要根据内存计算得到
+	//释放掉该设备的所有inode， inode数最大32个,NR_INODE=32,只能存储32个文件?太小了,玩具系统!
+	invalidate_inodes(dev); 
+	invalidate_buffers(dev); //释放掉该设备对应的所有buffer
 }
 
 #define _hashfn(dev,block) (((unsigned)(dev^block))%NR_HASH)
@@ -146,7 +147,7 @@ static inline void remove_from_queues(struct buffer_head * bh)
 	bh->b_prev_free->b_next_free = bh->b_next_free; //把自己从环形链表中摘除
 	bh->b_next_free->b_prev_free = bh->b_prev_free;
 	if (free_list == bh) //若自己是free_list, 更新之，
-		free_list = bh->b_next_free; // 所以这个free_list 根本不是空闲块链表，而是使用块环形链表，把free_list 改成use_list 更切且。use_list 页不切且，应该叫？？
+		free_list = bh->b_next_free; // 所以这个free_list 根本不是空闲块链表，而是使用块环形链表，把free_list 改成use_list 更切且。use_list 也不切且，应该叫？？
 }
 
 static inline void insert_into_queues(struct buffer_head * bh)
@@ -216,19 +217,19 @@ struct buffer_head * getblk(int dev,int block)
 	struct buffer_head * tmp, * bh;
 
 repeat:
-	if ((bh = get_hash_table(dev,block))) //查看dev,block是否在缓冲块中,是返回
+	if ((bh = get_hash_table(dev,block))) //查看dev,block是否在hash表中,是返回
 		return bh;
 	tmp = free_list;
 	do {
 		if (tmp->b_count)//这块被使用了,查看下一块
 			continue;
-		if (!bh || BADNESS(tmp)<BADNESS(bh)) {
+		if (!bh || BADNESS(tmp)<BADNESS(bh)) { //查找可用的bh, 即不dirt,也不lock
 			bh = tmp;
 			if (!BADNESS(tmp))//非dirt,非lock就选用该块
 				break;
 		}
 /* and repeat until we find something good */
-	} while ((tmp = tmp->b_next_free) != free_list);
+	} while ((tmp = tmp->b_next_free) != free_list); //从空闲的bh列表中找一个缓冲块
 	if (!bh) {
 		sleep_on(&buffer_wait);
 		goto repeat;
@@ -253,7 +254,7 @@ repeat:
 	bh->b_uptodate=0;
 	remove_from_queues(bh);
 	bh->b_dev=dev;
-	bh->b_blocknr=block;
+	bh->b_blocknr=block;  // 在这个缓冲块中要存上dev 和 block
 	insert_into_queues(bh);//就用找到的这个缓冲块，填好dev,block,插入到队列中
 	return bh;
 }
@@ -263,10 +264,10 @@ void brelse(struct buffer_head * buf)
 {
 	if (!buf)
 		return;
-	wait_buffer_unlock(buf);
+	wait_buffer_unlock(buf); //解锁该buf
 	if (!(buf->b_count--)) //就是把buf->b_count 减1,这是核心.
 		panic("Trying to free free buffer");
-	wake_up_last(&buffer_wait);
+	wake_up_last(&buffer_wait); //唤醒等待该buf的进程
 }
 
 /*
@@ -277,7 +278,7 @@ struct buffer_head * bread(int dev,int block)
 { //此处一次读取1024字节， 2*512bytes, 可认为一个磁盘块是2个扇区块
 	struct buffer_head * bh;
 
-	if (!(bh=getblk(dev,block))) //一定会得到一个bh
+	if (!(bh=getblk(dev,block))) //一定会得到一个bh,并且其bh->count>=1, >1表示不只一处使用
 		panic("bread: getblk returned NULL\n");
 	if (bh->b_uptodate)
 		return bh;
@@ -307,7 +308,7 @@ void bread_page(unsigned long address,int dev,int b[4])
 	struct buffer_head * bh[4];
 	int i;
 
-	for (i=0 ; i<4 ; i++)
+	for (i=0 ; i<4 ; i++) //读取4块为1页(4K)
 		if (b[i]) {
 			if ((bh[i] = getblk(dev,b[i])))
 				if (!bh[i]->b_uptodate)
@@ -319,7 +320,7 @@ void bread_page(unsigned long address,int dev,int b[4])
 			wait_buffer_unlock(bh[i]);
 			if (bh[i]->b_uptodate)
 				COPYBLK((unsigned long) bh[i]->b_data,address);
-			brelse(bh[i]);
+			brelse(bh[i]); // 就是把bh[i]->count-1 表示本次操作不再占用该bh
 		}
 }
 
@@ -344,7 +345,9 @@ struct buffer_head * breada(int dev,int first, ...)
 			if (!tmp->b_uptodate)
 //				ll_rw_block(READA,bh);
 				ll_rw_block(READA,tmp); //应该是tmp
-			tmp->b_count--;
+			//第一次getbld(dev,first)申请时会为1,此处count减1变成了0,表示它没有被占用.
+			//因为tmp 这部分是预读.
+			tmp->b_count--; 
 		}
 	}
 	va_end(args);
